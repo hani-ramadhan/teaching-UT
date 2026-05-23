@@ -4,723 +4,909 @@
 
 ---
 
-> **Alokasi Waktu Tutorial (60 menit)**
+> **Cara Menggunakan Modul Ini**
 >
-> | Sesi | Topik | Durasi |
-> |---|---|---|
-> | 1 | Teknik Penanganan Data Hilang (AB7 & AB8) | 10 menit |
-> | 2 | Analisis Regresi: Eksplorasi & Konfirmasi (AB9 & AB10) | 40 menit |
-> | 3 | Buffer & Tanya Jawab | 10 menit |
->
-> **Cara menggunakan modul ini:** Setiap bagian memuat ringkasan konsep, kode R siap
-> jalankan, dan **Cek Pemahaman** — pertanyaan yang Anda jawab sendiri dari output R.
-> Tutor memverifikasi hasil, bukan memberikan jawaban.
+> Modul ini dirancang untuk **memandu proses berpikir**, bukan memberikan jawaban langsung.
+> Setiap bagian memuat: (1) ringkasan konsep, (2) kode R untuk eksplorasi & verifikasi,
+> dan (3) **Cek Pemahaman** — pertanyaan yang Anda jawab sendiri berdasarkan output R.
+> Tutor akan memverifikasi hasil Anda, bukan memberikan solusi siap pakai.
 
 ---
 
 ## Daftar Isi
 
-1. [Sesi 1 — Teknik Penanganan Data Hilang (AB7 & AB8)](#sesi1)
-2. [Sesi 2 — Analisis Regresi Cara Eksplorasi (AB9)](#sesi2)
-3. [Sesi 3 — Analisis Regresi Cara Konfirmasi (AB10)](#sesi3)
-4. [Latihan Terpadu: Dataset Mahasiswa AVD (lanjutan)](#latihan)
-5. [Referensi](#referensi)
+1. [Ukuran Pemusatan & Penyebaran Data (AB1)](#ab1)
+2. [Koefisien Keragaman & Z-Score](#cv)
+3. [Bentuk-Bentuk Penyajian Data (AB2)](#ab2)
+4. [Praktikum Dasar R (AB3)](#ab3)
+5. [Transformasi Data: Konsep & Bentuk (AB5 & AB6)](#ab56)
+6. [Data Hilang: Definisi, Karakteristik & Penanganan (AB7)](#ab7)
+7. [How-To: Bercerita dengan Data — Prinsip & Praktik](#storytelling)
+8. [BONUS: Studi Kasus Dataset Mahasiswa AVD](#bonus)
 
 ---
 
-## Sesi 1 — Teknik Penanganan Data Hilang (AB7 & AB8) {#sesi1}
-### ⏱ 10 menit
+## 1. Ukuran Pemusatan & Penyebaran Data (AB1) {#ab1}
 
 ### Ringkasan Konsep
 
-Dari AB7, kita sudah mengenal **tiga tipe data hilang**:
+Ukuran **pemusatan data** menjawab pertanyaan: *"Di mana pusat data kita?"*
 
-```
-MCAR → Hilang sepenuhnya acak. Listwise deletion relatif aman.
-MAR  → Hilang bergantung variabel lain yang tersedia. Imputasi diperlukan.
-MNAR → Hilang bergantung nilai itu sendiri. Penanganan paling kompleks.
-```
+| Ukuran | Definisi Singkat | Fungsi R |
+|---|---|---|
+| **Mean** | Rata-rata aritmatik | `mean(x)` |
+| **Median** | Nilai tengah data terurut | `median(x)` |
+| **Modus** | Nilai yang paling sering muncul | `table(x)` atau paket `modeest` |
 
-AB8 memperluas ini dengan **menu lengkap teknik penanganan** di R:
+Ukuran **penyebaran data** menjawab: *"Seberapa tersebar data kita?"*
 
-| Teknik | Fungsi R | Cocok Untuk | Catatan |
-|---|---|---|---|
-| Hapus baris | `na.omit()` | MCAR, NA sedikit (< 5%) | Risiko kehilangan informasi |
-| Hapus kolom | `data[, colSums(is.na(data)) == 0]` | Kolom dengan NA sangat banyak | Jarang disarankan |
-| Imputasi mean/median | manual dengan `mean(..., na.rm=TRUE)` | MCAR/MAR, data numerik | Mereduksi variansi |
-| Forward/backward fill | `zoo::na.locf()` | Data deret waktu (time series) | Urutan data harus bermakna |
-| KNN Imputation | `VIM::kNN()` | MAR, data campuran | Lebih akurat dari mean |
-| MICE (PMM) | `mice::mice()` | MAR, multivariat | Paling direkomendasikan |
-| missForest | `missForest::missForest()` | MAR/MNAR, non-linear | Berbasis Random Forest |
+| Ukuran | Definisi Singkat | Fungsi R |
+|---|---|---|
+| **Range** | Nilai max − min | `diff(range(x))` |
+| **Variansi** | Rata-rata kuadrat simpangan | `var(x)` |
+| **Simpangan Baku** | Akar variansi | `sd(x)` |
 
-> ⚠️ **Catatan paket:** Paket `DMwR` yang disebutkan di modul AB8 **sudah dihapus dari
-> CRAN** dan tidak dapat diinstall dengan `install.packages("DMwR")` biasa. Gunakan
-> **`VIM::kNN()`** sebagai pengganti untuk KNN imputation — hasilnya setara dan paket
-> `VIM` sudah kita gunakan sejak Tutorial Web 1.
+> **Catatan penting:** `var()` dan `sd()` di R secara default menghitung **variansi & simpangan baku sampel** (pembagi *n−1*). Untuk populasi, Anda perlu menyesuaikan rumusnya.
 
-### Visualisasi Pola Data Hilang
-
-Sebelum memilih teknik, selalu **visualisasikan** dulu pola NA-nya:
+### Kode R: Eksplorasi & Verifikasi
 
 ```r
-# install.packages(c("VIM", "naniar", "mice", "missForest"))
-library(VIM)
-library(naniar)
+# ---- Data nilai ujian mahasiswa ----
+nilai <- c(72, 85, 90, 68, 77, 88, 95, 70, 82, 79,
+           91, 65, 83, 74, 88, 92, 78, 69, 85, 80)
 
-# ---- Dataset airquality: dataset bawaan R dengan NA nyata ----
-data("airquality")
-cat("=== Struktur Dataset ===\n")
-str(airquality)
+# --- Ukuran Pemusatan ---
+cat("Mean   :", mean(nilai), "\n")
+cat("Median :", median(nilai), "\n")
 
-cat("\n=== Jumlah NA per Kolom ===\n")
-colSums(is.na(airquality))
+# Modus (base R tidak punya fungsi modus langsung)
+tabel <- table(nilai)
+cat("Modus  :", names(tabel[tabel == max(tabel)]), "\n")
 
-cat("\n=== Persentase NA per Kolom ===\n")
-round(colSums(is.na(airquality)) / nrow(airquality) * 100, 1)
+# --- Ukuran Penyebaran ---
+cat("\nRange  :", diff(range(nilai)))
+cat("\nVariansi (sampel)    :", var(nilai))
+cat("\nSimpangan Baku (sampel):", sd(nilai))
 
-# ---- Visualisasi 1: vis_miss() dari naniar ----
-# Tampilan heatmap posisi NA di seluruh dataset
-vis_miss(airquality)
+# --- Ringkasan Sekaligus ---
+summary(nilai)
 
-# ---- Visualisasi 2: aggr() dari VIM ----
-# Proporsi NA + pola kombinasi kolom mana yang hilang bersamaan
-aggr(airquality,
-     col      = c("#4E79A7", "#E15759"),
-     numbers  = TRUE,
-     sortVars = TRUE,
-     labels   = names(airquality),
-     cex.axis = 0.8, gap = 3,
-     ylab     = c("Proporsi NA", "Pola NA"))
+# --- Visualisasi Distribusi ---
+par(mfrow = c(1, 2))
+hist(nilai,
+     main = "Distribusi Nilai Ujian",
+     xlab = "Nilai", ylab = "Frekuensi",
+     col = "#4E79A7", border = "white")
+abline(v = mean(nilai), col = "red", lwd = 2, lty = 2)
+abline(v = median(nilai), col = "darkgreen", lwd = 2, lty = 3)
+legend("topleft", legend = c("Mean", "Median"),
+       col = c("red", "darkgreen"), lty = c(2, 3), lwd = 2)
+
+boxplot(nilai,
+        main = "Boxplot Nilai Ujian",
+        ylab = "Nilai",
+        col = "#F28E2B", border = "#333333",
+        horizontal = FALSE)
 ```
 
-### Kode R: Perbandingan Metode Imputasi
+### ✅ Cek Pemahaman AB1
 
-```r
-library(VIM)
-library(mice)
+Jalankan kode di atas, lalu jawab sendiri:
 
-# ---- Salin data agar aslinya tidak berubah ----
-aq <- airquality
-
-# ---- Metode 1: Hapus baris (listwise deletion) ----
-aq_deleted <- na.omit(aq)
-cat("Baris sebelum hapus:", nrow(aq), "\n")
-cat("Baris setelah hapus :", nrow(aq_deleted), "\n")
-cat("Data hilang         :", nrow(aq) - nrow(aq_deleted), "baris\n\n")
-
-# ---- Metode 2: Imputasi Mean ----
-aq_mean <- aq
-aq_mean$Ozone[is.na(aq_mean$Ozone)]   <- mean(aq$Ozone,   na.rm = TRUE)
-aq_mean$Solar.R[is.na(aq_mean$Solar.R)] <- mean(aq$Solar.R, na.rm = TRUE)
-
-# ---- Metode 3: KNN Imputation (pengganti DMwR) ----
-aq_knn <- kNN(aq, variable = c("Ozone", "Solar.R"), k = 5)
-# kNN menambahkan kolom indikator; ambil hanya kolom asli
-aq_knn <- aq_knn[, names(aq)]
-
-# ---- Metode 4: MICE (Predictive Mean Matching) ----
-set.seed(42)
-imputed    <- mice(aq, m = 5, method = "pmm", maxit = 50,
-                   seed = 500, printFlag = FALSE)
-aq_mice    <- complete(imputed, 1)
-
-# ---- Bandingkan mean Ozone keempat metode ----
-cat("=== Perbandingan Mean Ozone Setelah Imputasi ===\n")
-cat("Data asli (tanpa NA):", round(mean(aq$Ozone, na.rm = TRUE), 2), "\n")
-cat("Listwise deletion   :", round(mean(aq_deleted$Ozone),       2), "\n")
-cat("Imputasi Mean       :", round(mean(aq_mean$Ozone),          2), "\n")
-cat("KNN (k=5)           :", round(mean(aq_knn$Ozone),           2), "\n")
-cat("MICE (PMM)          :", round(mean(aq_mice$Ozone),          2), "\n")
-
-# ---- Visualisasi distribusi sebelum vs sesudah ----
-par(mfrow = c(1, 3))
-hist(aq$Ozone, main = "Ozone: Asli (ada NA)",
-     col = "#4E79A7", border = "white", na.rm = TRUE, xlab = "Ozone")
-hist(aq_mean$Ozone, main = "Ozone: Imputasi Mean",
-     col = "#F28E2B", border = "white", xlab = "Ozone")
-hist(aq_mice$Ozone, main = "Ozone: Imputasi MICE",
-     col = "#59A14F", border = "white", xlab = "Ozone")
-par(mfrow = c(1, 1))
-```
-
-### ✅ Cek Pemahaman — Data Hilang
-
-1. Berapa persentase NA di kolom `Ozone` dan `Solar.R`? Apakah persentase tersebut "sedikit" atau "banyak" menurut Anda?
-2. Dari visualisasi `aggr()`, apakah ada pola — kolom `Ozone` dan `Solar.R` cenderung hilang **bersamaan** atau **terpisah**?
-3. Bandingkan distribusi histogram ketiga metode. Metode mana yang **paling mengubah** bentuk distribusi data asli? Mengapa?
-4. Mengapa imputasi mean selalu menghasilkan mean yang **persis sama** dengan rata-rata data asli?
-5. **Tantangan:** Gunakan `missForest::missForest(airquality)$ximp` dan bandingkan mean Ozone-nya dengan MICE. Mana yang lebih dekat ke data asli?
+1. Berapa nilai mean, median, dan modus dari data `nilai`?
+2. Apakah mean > median, mean < median, atau keduanya hampir sama? Apa kesimpulan Anda tentang **bentuk distribusi** data tersebut?
+3. Dari boxplot, apakah terdapat *outlier*? Bagaimana Anda mengetahuinya?
+4. Mengapa simpangan baku lebih sering digunakan daripada variansi dalam pelaporan?
+5. **Tantangan:** Ubah satu nilai menjadi `200` (misalnya, `nilai[1] <- 200`). Ukuran pemusatan mana yang paling terpengaruh — mean atau median? Mengapa?
 
 ---
 
-## Sesi 2 — Analisis Regresi: Cara Eksplorasi (AB9) {#sesi2}
-### ⏱ 20 menit
+## 2. Koefisien Keragaman & Z-Score {#cv}
 
 ### Ringkasan Konsep
 
-Analisis regresi menjawab dua pertanyaan utama:
-1. **Apakah ada hubungan** antara variabel X dan Y?
-2. **Seberapa kuat dan dalam arah apa** hubungan itu?
+**Koefisien Keragaman (CV)** berguna untuk *membandingkan variabilitas* dua kelompok data yang memiliki skala berbeda.
 
-**Alur kerja eksplorasi regresi (AB9):**
-
-```
-Langkah 1: Eksplorasi Data Awal
-  → summary(), histogram, scatter plot, boxplot
-
-Langkah 2: Analisis Korelasi
-  → cor(), heatmap korelasi
-
-Langkah 3: Fit Model
-  → lm(Y ~ X, data = ...)      ← regresi sederhana
-  → lm(Y ~ X1 + X2, data = ...) ← regresi berganda
-
-Langkah 4: Uji Asumsi
-  → plot(model) → 4 diagnostic plots
-  → normalitas residual: shapiro.test(residuals(model))
-  → multikolinearitas: car::vif(model)
-
-Langkah 5: Validasi
-  → train-test split + MSE/RMSE
-```
-
-### Notasi Regresi Linear
-
-Model regresi linear ditulis sebagai:
-
-$$\hat{y} = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \cdots + \beta_k x_k$$
+$$CV = \frac{s}{\bar{x}} \times 100\%$$
 
 | Notasi | Dibaca | Arti |
 |---|---|---|
-| $\hat{y}$ | *y-hat* | Nilai prediksi variabel dependen |
-| $\beta_0$ | *beta nol* (intersep) | Nilai $\hat{y}$ saat semua $x = 0$ |
-| $\beta_1, \ldots, \beta_k$ | *beta satu* … *beta k* (slope/koefisien) | Perubahan $\hat{y}$ per satu satuan $x_i$, dengan $x$ lainnya konstan |
-| $\epsilon$ | *epsilon* (residual/error) | Selisih $y_{aktual} - \hat{y}$ |
-| $R^2$ | *R-squared* | Proporsi variansi $y$ yang dijelaskan model (0–1) |
+| $CV$ | *coefficient of variation* | Koefisien keragaman; hasil dinyatakan dalam **persen** |
+| $s$ | *s* (simpangan baku sampel) | Mengukur seberapa jauh nilai-nilai menyebar dari rata-rata. Dihitung sebagai $s = \sqrt{\frac{\sum(x_i - \bar{x})^2}{n-1}}$ |
+| $\bar{x}$ | *x-bar* | Rata-rata (mean) sampel |
 
-> **Notasi di modul AB10 vs konvensi R:**
-> Modul AB10 menggunakan $y = ax + b$ (konvensi matematika). Di R dan kebanyakan
-> literatur statistik, ini ditulis $y = \beta_0 + \beta_1 x$ di mana $\beta_0$ adalah
-> intersep ($b$) dan $\beta_1$ adalah slope ($a$). Keduanya ekivalen.
-
-### Kode R: Eksplorasi Regresi Langkah demi Langkah
-
-Kita gunakan dataset `mtcars` (bawaan R) — memprediksi konsumsi BBM (`mpg`) dari
-berat kendaraan (`wt`) dan tenaga kuda (`hp`).
-
-```r
-library(ggplot2)
-
-# ---- Langkah 1: Eksplorasi Data Awal ----
-data(mtcars)
-cat("=== Ringkasan Dataset ===\n")
-summary(mtcars[, c("mpg", "wt", "hp", "cyl")])
-
-# Distribusi variabel dependen
-hist(mtcars$mpg,
-     main = "Distribusi: Konsumsi BBM (mpg)",
-     xlab = "Miles per Gallon",
-     col  = "#4E79A7", border = "white")
-
-# Scatter plot: hubungan wt vs mpg
-ggplot(mtcars, aes(x = wt, y = mpg)) +
-  geom_point(color = "#4E79A7", size = 3, alpha = 0.7) +
-  geom_smooth(method = "lm", se = TRUE,
-              color = "#E15759", linewidth = 1) +
-  labs(
-    title    = "Semakin Berat Kendaraan, Semakin Boros BBM",
-    subtitle = "Hubungan negatif antara berat (wt) dan efisiensi (mpg)",
-    x = "Berat Kendaraan (1000 lbs)",
-    y = "Efisiensi BBM (mpg)"
-  ) +
-  theme_minimal()
-```
-
-```r
-# ---- Langkah 2: Analisis Korelasi ----
-cor_matrix <- cor(mtcars[, c("mpg", "wt", "hp", "cyl", "disp")])
-cat("=== Matriks Korelasi ===\n")
-round(cor_matrix, 2)
-
-# Heatmap korelasi
-# install.packages("corrplot")
-library(corrplot)
-corrplot(cor_matrix,
-         method = "color",
-         type   = "upper",
-         addCoef.col = "black",
-         tl.col = "black",
-         col    = colorRampPalette(c("#E15759", "white", "#4E79A7"))(200),
-         title  = "Heatmap Korelasi mtcars",
-         mar    = c(0, 0, 1, 0))
-```
-
-```r
-# ---- Langkah 3a: Regresi Linear Sederhana ----
-model_simple <- lm(mpg ~ wt, data = mtcars)
-cat("=== Ringkasan Model Sederhana (mpg ~ wt) ===\n")
-summary(model_simple)
-
-# Membaca output summary(lm):
-# Coefficients:
-#   (Intercept)  → β0: nilai mpg saat wt = 0
-#   wt           → β1: perubahan mpg per satu unit wt
-#
-# Pr(>|t|):      → p-value; jika < 0.05, koefisien signifikan
-# Multiple R-squared: proporsi variansi mpg yang dijelaskan wt
-# Adjusted R-squared: R² yang disesuaikan untuk jumlah prediktor
-
-# Ekstrak komponen penting
-cat("\nKoefisien:\n")
-coef(model_simple)
-cat("\nR-squared:", summary(model_simple)$r.squared, "\n")
-cat("Adjusted R-squared:", summary(model_simple)$adj.r.squared, "\n")
-
-# Interpretasi langsung
-b0 <- round(coef(model_simple)[1], 3)
-b1 <- round(coef(model_simple)[2], 3)
-cat(sprintf(
-  "\nInterpretasi: mpg = %.3f + (%.3f × wt)\n", b0, b1))
-cat(sprintf(
-  "Setiap penambahan 1000 lbs berat, mpg berkurang %.3f unit.\n",
-  abs(b1)))
-```
-
-```r
-# ---- Langkah 3b: Regresi Linear Berganda ----
-model_multi <- lm(mpg ~ wt + hp + cyl, data = mtcars)
-cat("=== Ringkasan Model Berganda (mpg ~ wt + hp + cyl) ===\n")
-summary(model_multi)
-
-# Bandingkan R² sederhana vs berganda
-cat("\nPerbandingan R²:\n")
-cat("Model sederhana (wt saja)    :",
-    round(summary(model_simple)$r.squared, 4), "\n")
-cat("Model berganda (wt + hp + cyl):",
-    round(summary(model_multi)$r.squared,  4), "\n")
-```
-
-```r
-# ---- Langkah 4: Uji Asumsi ----
-par(mfrow = c(2, 2))
-plot(model_simple,
-     col = "#4E79A7", pch = 16,
-     main.title = "Diagnostic Plots: Model Sederhana")
-par(mfrow = c(1, 1))
-
-# Panduan membaca 4 diagnostic plots:
-# 1. Residuals vs Fitted   → cek linearitas & homoskedastisitas
-#    Ideal: titik tersebar acak di sekitar garis y=0
-# 2. Q-Q Residuals         → cek normalitas residual
-#    Ideal: titik mengikuti garis diagonal
-# 3. Scale-Location        → cek homoskedastisitas
-#    Ideal: garis merah datar, titik tersebar merata
-# 4. Residuals vs Leverage → deteksi outlier berpengaruh
-#    Titik di luar Cook's distance = influential points
-
-# Uji Shapiro-Wilk pada residual
-cat("=== Uji Normalitas Residual ===\n")
-shapiro.test(residuals(model_simple))
-# H0: residual berdistribusi normal
-# Jika p > 0.05: gagal tolak H0 → asumsi normalitas terpenuhi
-
-# Multikolinearitas (hanya untuk model berganda)
-library(car)
-cat("\n=== VIF (Variance Inflation Factor) ===\n")
-vif(model_multi)
-# VIF < 5: tidak ada multikolinearitas serius
-# VIF > 10: masalah multikolinearitas perlu ditangani
-```
-
-```r
-# ---- Langkah 5: Validasi Model (Train-Test Split) ----
-set.seed(2024)
-n <- nrow(mtcars)
-train_idx   <- sample(1:n, size = round(0.7 * n))
-train_data  <- mtcars[train_idx, ]
-test_data   <- mtcars[-train_idx, ]
-
-# Latih model pada data training
-model_train <- lm(mpg ~ wt, data = train_data)
-
-# Prediksi pada data testing
-predictions <- predict(model_train, newdata = test_data)
-
-# Evaluasi: RMSE dan MAE
-rmse <- sqrt(mean((test_data$mpg - predictions)^2))
-mae  <- mean(abs(test_data$mpg - predictions))
-
-cat("=== Evaluasi Model pada Data Testing ===\n")
-cat("RMSE (Root Mean Square Error):", round(rmse, 3), "\n")
-cat("MAE  (Mean Absolute Error)   :", round(mae,  3), "\n")
-
-# Visualisasi: Aktual vs Prediksi
-ggplot(data.frame(aktual = test_data$mpg, prediksi = predictions),
-       aes(x = aktual, y = prediksi)) +
-  geom_point(color = "#4E79A7", size = 3) +
-  geom_abline(intercept = 0, slope = 1,
-              color = "#E15759", linewidth = 1, linetype = "dashed") +
-  annotate("text", x = 15, y = 30,
-           label = paste("RMSE =", round(rmse, 2)),
-           size = 4, color = "#333333") +
-  labs(
-    title    = "Aktual vs Prediksi mpg — Data Testing",
-    subtitle = "Garis merah: prediksi sempurna (aktual = prediksi)",
-    x = "mpg Aktual", y = "mpg Prediksi"
-  ) +
-  theme_minimal()
-```
-
-### ✅ Cek Pemahaman — Regresi Eksplorasi
-
-1. Dari `summary(model_simple)`, berapa nilai koefisien `wt`? Interpretasikan artinya dalam satu kalimat menggunakan konteks data (bukan simbol matematika).
-2. Apakah koefisien `wt` signifikan secara statistik (p < 0.05)? Bagaimana Anda mengetahuinya dari output R?
-3. Bandingkan $R^2$ model sederhana vs berganda. Apakah penambahan variabel `hp` dan `cyl` meningkatkan kemampuan model secara bermakna?
-4. Dari 4 diagnostic plots, apakah asumsi **normalitas residual** terpenuhi? Apakah ada **outlier berpengaruh**?
-5. **Tantangan:** Dari matriks korelasi, variabel mana yang berkorelasi paling kuat dengan `mpg`? Apakah ini konsisten dengan koefisien yang signifikan di model berganda?
+> **Mengapa dikalikan 100%?** Karena $s/\bar{x}$ menghasilkan angka desimal (misalnya 0,073). Dikalikan 100% menjadi persentase (7,3%) agar lebih mudah dibaca dan dibandingkan.
 
 ---
 
-## Sesi 3 — Analisis Regresi: Cara Konfirmasi (AB10) {#sesi3}
-### ⏱ 20 menit
+**Z-Score (Angka Baku)** mengkonversi nilai ke satuan standar deviasi:
+
+$$Z = \frac{x_i - \bar{x}}{SD}$$
+
+| Notasi | Dibaca | Arti |
+|---|---|---|
+| $Z$ | *z* (z-score / angka baku) | Hasil konversi: menunjukkan posisi $x_i$ dalam satuan SD relatif terhadap rata-rata |
+| $x_i$ | *x sub-i* | Nilai observasi ke-$i$ yang ingin dihitung z-score-nya |
+| $\bar{x}$ | *x-bar* | Rata-rata sampel (atau populasi, ditulis $\mu$) |
+| $SD$ | *standard deviation* | Simpangan baku; dalam konteks sampel ditulis $s$, populasi ditulis $\sigma$ |
+
+**Perbedaan notasi populasi vs. sampel** — perlu diperhatikan konsistensinya:
+
+| | Populasi | Sampel |
+|---|---|---|
+| Rata-rata | $\mu$ (mu) | $\bar{x}$ (x-bar) |
+| Simpangan baku | $\sigma$ (sigma) | $s$ |
+| Variansi | $\sigma^2$ | $s^2$ |
+| Ukuran data | $N$ (kapital) | $n$ (kecil) |
+| Pembagi variansi | $N$ | $n - 1$ (koreksi Bessel) |
+
+> **Koreksi Bessel ($n-1$):** Sampel cenderung meremehkan variansi populasi. Membagi dengan $n-1$ menghasilkan estimasi yang tidak bias (*unbiased*). Itulah mengapa `var()` dan `sd()` di R secara default menggunakan $n-1$.
+
+Interpretasi Z-score: $Z > 0$ artinya di atas rata-rata; $Z < 0$ artinya di bawah rata-rata; $Z = 0$ artinya tepat sama dengan rata-rata.
+
+> **Perhatikan kesalahan umum:** Pada Contoh 2 di modul Koefisien Keragaman, terdapat ketidakkonsistenan antara narasi ("standar deviasi 15, rata-rata 90") dan perhitungan (menggunakan SD=12, mean=100 untuk CVY). Pastikan Anda selalu menggunakan angka yang konsisten.
+
+### Kode R: Verifikasi
+
+```r
+# ---- Fungsi CV ----
+cv <- function(x) (sd(x) / mean(x)) * 100
+
+# ---- Dataset dua kelas ----
+kelas_A <- c(78, 82, 85, 79, 88, 91, 77, 83, 80, 86)
+kelas_B <- c(55, 70, 90, 45, 95, 60, 88, 72, 50, 85)
+
+cat("=== Kelas A ===\n")
+cat("Mean:", mean(kelas_A), "| SD:", round(sd(kelas_A), 2),
+    "| CV:", round(cv(kelas_A), 2), "%\n")
+
+cat("\n=== Kelas B ===\n")
+cat("Mean:", mean(kelas_B), "| SD:", round(sd(kelas_B), 2),
+    "| CV:", round(cv(kelas_B), 2), "%\n")
+
+cat("\nKelas mana yang lebih 'seragam'? Kelas ... dengan CV lebih ...",
+    ifelse(cv(kelas_A) < cv(kelas_B), "A dengan CV lebih kecil", "B dengan CV lebih kecil"), "\n")
+
+# ---- Z-Score ----
+# Kasus: Membandingkan performa pada dua ujian berbeda
+skor_mat  <- 82; mean_mat <- 75; sd_mat <- 8
+skor_stat <- 78; mean_stat <- 70; sd_stat <- 5
+
+z_mat  <- (skor_mat  - mean_mat)  / sd_mat
+z_stat <- (skor_stat - mean_stat) / sd_stat
+
+cat("\n=== Z-Score ===\n")
+cat("Z Matematika:", round(z_mat, 3), "\n")
+cat("Z Statistik :", round(z_stat, 3), "\n")
+cat("Performa lebih baik di:",
+    ifelse(z_mat > z_stat, "Matematika", "Statistik"), "\n")
+```
+
+### ✅ Cek Pemahaman CV & Z-Score
+
+1. Antara Kelas A dan B, kelas mana yang nilai ujiannya lebih seragam? Jelaskan berdasarkan CV.
+2. Jika rata-rata Kelas A dan B hampir sama, tetapi CV mereka berbeda jauh, apa yang bisa disimpulkan?
+3. Seseorang mendapat nilai 80 di dua ujian berbeda. Apakah performa mereka pasti *sama baik*? Gunakan konsep Z-score untuk menjelaskan.
+4. **Tantangan:** Hitung CV untuk data `nilai` dari AB1. Interpretasikan hasilnya: apakah data tersebut "seragam" atau "beragam"?
+
+---
+
+## 3. Bentuk-Bentuk Penyajian Data (AB2) {#ab2}
 
 ### Ringkasan Konsep
 
-AB10 memperkenalkan **least squares** sebagai fondasi matematis di balik `lm()` di R.
+Penyajian data yang baik adalah yang **tepat guna** — sesuai jenis data dan pesan yang ingin disampaikan.
 
-Garis regresi $y = ax + b$ dicari dengan meminimalkan jumlah kuadrat residual:
+| Jenis Grafik | Terbaik Untuk | Hindari Saat |
+|---|---|---|
+| Bar Chart | Membandingkan kategori | Terlalu banyak kategori (> 10) |
+| Pie Chart | Proporsi (maks. ~5 slice) | Nilai antar slice sangat mirip |
+| Line Chart | Tren waktu / data kontinu | Data kategorik tidak berurutan |
+| Histogram | Distribusi data numerik | Data kategorik |
+| Boxplot | Perbandingan distribusi antar kelompok | Sampel sangat kecil (< 5) |
+| Scatter Plot | Hubungan dua variabel numerik | Mencari proporsi/tren waktu |
+| Heatmap | Pola dalam matriks besar | Data sederhana |
 
-$$a = \frac{n\sum x_i y_i - \sum x_i \sum y_i}{n\sum x_i^2 - (\sum x_i)^2}, \quad
-b = \frac{1}{n}\left(\sum y_i - a\sum x_i\right)$$
-
-| Notasi | Arti |
-|---|---|
-| $n$ | Jumlah pasangan data $(x, y)$ |
-| $x_i, y_i$ | Nilai observasi ke-$i$ |
-| $a$ | Slope (kemiringan) — setara $\beta_1$ |
-| $b$ | Intersep — setara $\beta_0$ |
-| $\sum$ | Penjumlahan dari $i=1$ sampai $n$ |
-| $\epsilon_1, \epsilon_2$ | Residual: jarak vertikal titik data ke garis regresi |
-
-> ⚠️ **Inkonsistensi di Modul AB10 — Contoh 2:**
-> Data asli: $y$ = 12, 19, 29, 37, 45 (total $\sum y = 142$)
-> Tabel perhitungan menggunakan: $y$ = 10, 13, 25, 34, 40 (total $\sum y = 122$)
->
-> Kedua set data berbeda — bukan sekadar transformasi. Kode R di bawah menggunakan
-> **data asli** (12, 19, 29, 37, 45) yang tertera di soal. Jalankan dan bandingkan
-> hasilnya dengan solusi di modul.
-
-### Kode R: Verifikasi Manual vs `lm()`
+### Kode R: Galeri Visualisasi Dasar
 
 ```r
-# ===========================================================
-# VERIFIKASI CONTOH 1 AB10
-# Data: {(2,1), (1,1), (3,2)}
-# ===========================================================
-x1 <- c(2, 1, 3)
-y1 <- c(1, 1, 2)
-n1 <- length(x1)
-
-# Hitung komponen rumus manual
-sum_x  <- sum(x1);   sum_y  <- sum(y1)
-sum_xy <- sum(x1 * y1); sum_x2 <- sum(x1^2)
-
-a1 <- (n1 * sum_xy - sum_x * sum_y) / (n1 * sum_x2 - sum_x^2)
-b1 <- (1/n1) * (sum_y - a1 * sum_x)
-
-cat("=== Contoh 1: Perhitungan Manual ===\n")
-cat("a (slope)    :", round(a1, 4), "\n")
-cat("b (intersep) :", round(b1, 4), "\n")
-cat("Garis regresi: y =", round(a1, 4), "x +", round(b1, 4), "\n\n")
-
-# Verifikasi dengan lm()
-model1 <- lm(y1 ~ x1)
-cat("=== Contoh 1: Verifikasi lm() ===\n")
-cat("Intersep (b) :", round(coef(model1)[1], 4), "\n")
-cat("Slope    (a) :", round(coef(model1)[2], 4), "\n")
-
-# Apakah hasil manual = hasil lm()? Bandingkan:
-cat("\nSelisih slope   :", abs(a1 - coef(model1)[2]), "\n")
-cat("Selisih intersep:", abs(b1 - coef(model1)[1]), "\n")
-
-# Plot
-plot(x1, y1, pch = 16, col = "#4E79A7", cex = 1.5,
-     main = "Contoh 1: Data & Garis Regresi",
-     xlab = "x", ylab = "y",
-     xlim = c(0, 4), ylim = c(0, 3))
-abline(model1, col = "#E15759", lwd = 2)
-legend("topleft",
-       legend = paste("y =", round(a1,3), "x +", round(b1,3)),
-       col = "#E15759", lty = 1, lwd = 2)
-```
-
-```r
-# ===========================================================
-# VERIFIKASI CONTOH 2 AB10
-# Data penjualan ASLI (sesuai tabel soal): 12, 19, 29, 37, 45
-# x = tahun 2019–2023 → ditransformasi ke t = 0,1,2,3,4
-# ===========================================================
-tahun      <- c(2019, 2020, 2021, 2022, 2023)
-penjualan  <- c(12, 19, 29, 37, 45)  # data ASLI dari soal
-
-# Transformasi t = x - 2019 (mengurangi skala, bukan mengubah data)
-t <- tahun - 2019
-n2 <- length(t)
-
-cat("=== Contoh 2: Data Asli ===\n")
-cat("t (tahun ke-):", t, "\n")
-cat("y (penjualan):", penjualan, "\n\n")
-
-# Hitung manual
-sum_t   <- sum(t);   sum_y2  <- sum(penjualan)
-sum_ty  <- sum(t * penjualan); sum_t2  <- sum(t^2)
-
-a2 <- (n2 * sum_ty - sum_t * sum_y2) / (n2 * sum_t2 - sum_t^2)
-b2 <- (1/n2) * (sum_y2 - a2 * sum_t)
-
-cat("=== Hasil Perhitungan (data asli) ===\n")
-cat("a (slope)    :", round(a2, 4), "\n")
-cat("b (intersep) :", round(b2, 4), "\n\n")
-
-# Prediksi tahun 2024 (t = 5)
-t_2024     <- 2024 - 2019
-pred_2024  <- a2 * t_2024 + b2
-cat("Prediksi penjualan 2024 (data asli):",
-    round(pred_2024, 2), "miliar IDR\n")
-
-# Verifikasi dengan lm()
-model2     <- lm(penjualan ~ t)
-pred_lm    <- predict(model2, newdata = data.frame(t = t_2024))
-cat("Prediksi lm() 2024                :",
-    round(pred_lm, 2), "miliar IDR\n")
-
-# ---- Bandingkan dengan data modul (10,13,25,34,40) ----
-penjualan_modul <- c(10, 13, 25, 34, 40)   # data di tabel modul AB10
-model_modul     <- lm(penjualan_modul ~ t)
-pred_modul      <- predict(model_modul,
-                           newdata = data.frame(t = t_2024))
-cat("\n[Perbandingan] Prediksi 2024 (data modul):",
-    round(pred_modul, 2), "miliar IDR\n")
-cat("→ Selisih antara dua versi data:",
-    round(abs(pred_2024 - pred_modul), 2), "miliar IDR\n")
-
-# ---- Visualisasi Tren + Prediksi ----
+# Install dan muat ggplot2 jika belum ada
+# install.packages("ggplot2")
 library(ggplot2)
-plot_data <- data.frame(
-  t         = c(t, t_2024),
-  penjualan = c(penjualan, NA),
-  tipe      = c(rep("Aktual", 5), "Prediksi")
+
+# ---- Data contoh: Penjualan per Departemen ----
+dept_data <- data.frame(
+  departemen = c("SDM", "IT", "Keuangan", "Pemasaran", "Operasional"),
+  penjualan  = c(120, 200, 150, 180, 90),
+  kuartal    = rep("Q1 2024", 5)
 )
 
-ggplot() +
-  # Data aktual
-  geom_point(data = subset(plot_data, tipe == "Aktual"),
-             aes(x = t + 2019, y = penjualan),
-             color = "#4E79A7", size = 4) +
-  # Garis regresi (diperpanjang ke 2024)
-  geom_smooth(data = subset(plot_data, tipe == "Aktual"),
-              aes(x = t + 2019, y = penjualan),
-              method = "lm", se = TRUE, fullrange = TRUE,
-              color = "#E15759", linewidth = 1.2) +
-  # Titik prediksi
-  geom_point(aes(x = 2024, y = pred_lm),
-             color = "#59A14F", size = 5, shape = 18) +
-  annotate("text", x = 2024, y = pred_lm + 1.5,
-           label = paste0("2024: ", round(pred_lm, 1), " M"),
-           color = "#59A14F", size = 3.5, fontface = "bold") +
-  scale_x_continuous(breaks = 2019:2024) +
-  labs(
-    title    = "Tren Penjualan 2019–2023 & Prediksi 2024",
-    subtitle = "Menggunakan regresi least squares | data asli modul AB10",
-    x = "Tahun", y = "Penjualan (miliar IDR)"
-  ) +
+# --- Bar Chart ---
+ggplot(dept_data, aes(x = reorder(departemen, -penjualan), y = penjualan)) +
+  geom_bar(stat = "identity", fill = "#4E79A7") +
+  geom_text(aes(label = penjualan), vjust = -0.5, size = 4) +
+  labs(title = "Penjualan per Departemen — Q1 2024",
+       x = "Departemen", y = "Penjualan (juta Rp)") +
+  theme_minimal()
+
+# --- Pie Chart ---
+ggplot(dept_data, aes(x = "", y = penjualan, fill = departemen)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  labs(title = "Proporsi Penjualan per Departemen") +
+  theme_void() +
+  theme(legend.position = "right")
+
+# --- Line Chart: Tren Bulanan ---
+tren_data <- data.frame(
+  bulan  = month.abb[1:6],
+  nilai  = c(150, 160, 145, 175, 190, 185)
+)
+tren_data$bulan <- factor(tren_data$bulan, levels = month.abb[1:6])
+
+ggplot(tren_data, aes(x = bulan, y = nilai, group = 1)) +
+  geom_line(color = "#E15759", linewidth = 1.2) +
+  geom_point(color = "#E15759", size = 3) +
+  labs(title = "Tren Penjualan Jan–Jun 2024",
+       x = "Bulan", y = "Penjualan (juta Rp)") +
   theme_minimal()
 ```
 
-```r
-# ===========================================================
-# MEMBACA OUTPUT summary(lm) SECARA LENGKAP
-# ===========================================================
-cat("\n=== Output Lengkap Model Penjualan ===\n")
-summary(model2)
+### ✅ Cek Pemahaman AB2
 
-# Panduan membaca output:
-#
-# Call: formula yang digunakan
-#
-# Residuals: distribusi residu (min, Q1, median, Q3, max)
-#   → Median mendekati 0 = baik
-#
-# Coefficients:
-#   Estimate     = nilai β (koefisien)
-#   Std. Error   = ketidakpastian estimasi (semakin kecil semakin baik)
-#   t value      = Estimate / Std. Error
-#   Pr(>|t|)     = p-value; ** atau *** = sangat signifikan
-#
-# Residual standard error = rata-rata besarnya error prediksi
-# Multiple R-squared      = proporsi variansi y yang dijelaskan model
-# F-statistic             = uji signifikansi model secara keseluruhan
-# p-value (F-stat)        = jika < 0.05, model secara keseluruhan signifikan
-```
-
-### ✅ Cek Pemahaman — Regresi Konfirmasi
-
-1. Dari Contoh 1, apakah hasil perhitungan manual ($a$ dan $b$) cocok dengan output `lm()`? Berapa selisihnya?
-2. Jalankan kode Contoh 2. Berapa prediksi penjualan 2024 menggunakan data asli? Bandingkan dengan jawaban di modul (51,7 miliar). Mengapa berbeda?
-3. Dari `summary(model2)`, apakah koefisien `t` (slope) signifikan? Bagaimana Anda mengetahuinya?
-4. Apa arti nilai $R^2$ pada model penjualan? Apakah model ini "baik"?
-5. **Tantangan:** Tambahkan data penjualan aktual 2024 (misalkan 50 miliar) ke dataset. Buat model regresi baru dengan data 2019–2024, lalu prediksi 2025. Apakah prediksi 2025 lebih atau kurang dari 60 miliar?
+1. Kapan Anda sebaiknya menggunakan histogram daripada bar chart? Apa perbedaan mendasarnya?
+2. Pie chart sering dikritik oleh ahli visualisasi. Menurut Anda, apa kelemahannya dibanding bar chart horizontal?
+3. Data tren penjualan selama 3 tahun terakhir — visualisasi apa yang paling tepat? Jelaskan.
+4. **Coba ubah kode bar chart:** Bagaimana hasilnya jika Anda menghapus `reorder(departemen, -penjualan)` dan menggunakan `departemen` saja? Mana tampilan yang lebih informatif?
 
 ---
 
-## Latihan Terpadu: Dataset Mahasiswa AVD (lanjutan) {#latihan}
+## 4. Praktikum Dasar R (AB3) {#ab3}
 
-Lanjutan dari Tutorial Web 1 — kini kita integrasikan penanganan data hilang
-dan regresi ke dalam dataset yang sama.
+### Ringkasan Konsep
+
+Praktikum ini memperkenalkan R sebagai "kalkulator statistik" dan lingkungan pemrograman dasar.
+
+**Konsep kunci yang harus dikuasai:**
+
+- Vektor, data frame, dan operasi dasarnya
+- Fungsi `sd()`, `mean()`, `var()`, `summary()`
+- Fungsi `plot()`: parameter `main`, `xlab`, `ylab`, `col`, `cex`, `pch`, `type`
+- Operator `$` untuk mengakses kolom data frame
+
+### Kode R: Ekspansi Praktikum AB3
 
 ```r
-# ---- Buat ulang dataset mahasiswa AVD ----
+# ---- Verifikasi Contoh 3 (AB3) ----
+data <- c(2, 3, 5, 6, 10, 13, 18, 22, 24, 25)
+cat("Standar deviasi data:", round(sd(data), 4), "\n")
+# Tuliskan hasilnya. Apakah sesuai perhitungan manual Anda?
+
+# ---- Verifikasi Contoh 4 (AB3) ----
+data_frame_1 <- data.frame(
+  data_1 = c(1, 3, 4, 6, 8, 9),
+  data_2 = c(7, 8, 8, 7, 13, 16),
+  data_3 = c(11, 13, 13, 18, 19, 22),
+  data_4 = c(12, 16, 18, 22, 29, 38)
+)
+
+cat("\nSD data_1:", round(sd(data_frame_1$data_1), 4))
+cat("\nSD data_2:", round(sd(data_frame_1$data_2), 4))
+cat("\nSD data_3:", round(sd(data_frame_1$data_3), 4))
+cat("\nSD data_4:", round(sd(data_frame_1$data_4), 4))
+
+# ---- Eksplorasi plot() lebih lanjut ----
+# Coba berbagai nilai pch dan perhatikan bentuk titiknya
+par(mfrow = c(2, 3))
+for (p in c(1, 3, 6, 15, 17, 19)) {
+  plot(1:10, main = paste("pch =", p),
+       pch = p, col = "steelblue", cex = 1.5,
+       xlab = "", ylab = "")
+}
+par(mfrow = c(1, 1))
+
+# ---- Latihan Mandiri: Grafik Bertumpuk ----
+x <- 1:20
+y1 <- x^1.5
+y2 <- log(x) * 10
+
+plot(x, y1, type = "l", col = "blue", lwd = 2,
+     main = "Perbandingan Dua Fungsi",
+     xlab = "x", ylab = "y", ylim = c(0, 100))
+lines(x, y2, col = "red", lwd = 2, lty = 2)
+legend("topleft", legend = c("x^1.5", "10*log(x)"),
+       col = c("blue", "red"), lty = c(1, 2), lwd = 2)
+```
+
+### ✅ Cek Pemahaman AB3
+
+1. Berapa hasil `sd(data)` untuk data Contoh 3? Cek apakah jawaban Anda sesuai dengan yang dihitung R.
+2. Dari empat kolom di `data_frame_1`, kolom mana yang memiliki simpangan baku terbesar? Apa artinya secara statistik?
+3. Apa perbedaan antara `type = "l"` dan `type = "p"` dalam fungsi `plot()`?
+4. **Tantangan:** Buat grafik dengan dua garis menggunakan `plot()` dan `lines()`, lalu tambahkan judul, label sumbu, dan legenda.
+
+---
+
+## 5. Transformasi Data: Konsep & Bentuk (AB5 & AB6) {#ab56}
+
+### Ringkasan Konsep
+
+Transformasi data dilakukan ketika data **tidak memenuhi asumsi** analisis yang akan digunakan.
+
+```
+Kapan perlu transformasi?
+┌─────────────────────────────────────────────────┐
+│  Data sangat skewed (miring)  → Log / Akar kuadrat
+│  Variansi tidak konstan       → Log / Box-Cox
+│  Hubungan tidak linear        → Log / Pangkat
+│  Skala berbeda antar fitur    → Normalisasi / Standarisasi
+│  Data kategorik               → Encoding
+└─────────────────────────────────────────────────┘
+```
+
+**Transformasi Tukey (Ladder of Powers):**
+
+| Pangkat (λ) | Transformasi | Cocok untuk |
+|---|---|---|
+| 2 | x² | Skewness negatif kuat |
+| 1 | x | Tidak perlu transformasi |
+| 0.5 | √x | Skewness positif ringan |
+| 0 | log(x) | Skewness positif sedang |
+| −0.5 | 1/√x | Skewness positif kuat |
+| −1 | 1/x | Skewness positif sangat kuat |
+
+**Menguji normalitas di R:**
+
+- Visual: Histogram + kurva normal, Q-Q plot
+- Statistik: `shapiro.test()` (Shapiro-Wilk, efektif untuk n < 50)
+
+### Kode R: Transformasi & Uji Normalitas
+
+```r
+set.seed(42)
+
+# ---- Data skewed positif (simulasi pendapatan) ----
+pendapatan <- c(25, 30, 35, 40, 100, 200, 300, 400, 500, 1000,
+                28, 33, 38, 45, 120, 250, 350, 480, 550, 950)
+
+# ---- Transformasi ----
+pd_log    <- log(pendapatan)         # log natural
+pd_log10  <- log10(pendapatan)       # log basis 10
+pd_sqrt   <- sqrt(pendapatan)        # akar kuadrat
+pd_sq     <- pendapatan^2            # kuadrat (untuk skewness negatif)
+
+# ---- Visualisasi sebelum & sesudah ----
+par(mfrow = c(2, 3))
+
+hist(pendapatan, main = "Data Asli", col = "#4E79A7", border = "white",
+     xlab = "Pendapatan (ribu Rp)")
+hist(pd_log,    main = "Transformasi Log Natural", col = "#59A14F",
+     border = "white", xlab = "ln(Pendapatan)")
+hist(pd_log10,  main = "Transformasi Log10", col = "#F28E2B",
+     border = "white", xlab = "log10(Pendapatan)")
+hist(pd_sqrt,   main = "Transformasi Akar Kuadrat", col = "#E15759",
+     border = "white", xlab = "√Pendapatan")
+
+# Q-Q Plot data asli vs log-transformasi
+qqnorm(pendapatan, main = "Q-Q Plot: Data Asli", pch = 16, col = "#4E79A7")
+qqline(pendapatan, col = "red", lwd = 2)
+
+qqnorm(pd_log, main = "Q-Q Plot: Log Natural", pch = 16, col = "#59A14F")
+qqline(pd_log, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+
+# ---- Uji Shapiro-Wilk ----
+cat("=== Uji Normalitas Shapiro-Wilk ===\n")
+cat("Data asli   : p-value =", round(shapiro.test(pendapatan)$p.value, 4), "\n")
+cat("Log natural : p-value =", round(shapiro.test(pd_log)$p.value, 4), "\n")
+cat("Log10       : p-value =", round(shapiro.test(pd_log10)$p.value, 4), "\n")
+cat("Akar kuadrat: p-value =", round(shapiro.test(pd_sqrt)$p.value, 4), "\n")
+
+# ---- Normalisasi vs Standarisasi ----
+# Normalisasi Min-Max → rentang [0, 1]
+normalisasi <- function(x) (x - min(x)) / (max(x) - min(x))
+
+# Standarisasi Z-score → mean=0, sd=1
+standarisasi <- function(x) (x - mean(x)) / sd(x)
+
+cat("\n=== Perbandingan Normalisasi vs Standarisasi ===\n")
+cat("Nilai asli (3 pertama):", head(pendapatan, 3), "\n")
+cat("Normalisasi           :", round(head(normalisasi(pendapatan), 3), 4), "\n")
+cat("Standarisasi          :", round(head(standarisasi(pendapatan), 3), 4), "\n")
+```
+
+### ✅ Cek Pemahaman AB5 & AB6
+
+1. Berapa p-value Shapiro-Wilk untuk data asli vs. log-transformasi? Transformasi mana yang **paling berhasil** mendekati normalitas?
+2. Pada Q-Q plot, bagaimana Anda mengenali bahwa data berdistribusi normal? Jelaskan secara visual.
+3. Apa perbedaan praktis antara **normalisasi** dan **standarisasi**? Kapan Anda memilih normalisasi, dan kapan memilih standarisasi?
+4. Data berikut memiliki skewness negatif: `c(50, 60, 70, 75, 80, 82, 83, 85, 87, 90)`. Transformasi apa yang paling sesuai menurut Tukey's Ladder?
+5. **Tantangan:** Hitung **skewness** sebelum dan sesudah transformasi menggunakan `library(e1071); skewness(x)`. Apakah skewness mendekati 0 setelah transformasi?
+
+---
+
+## 6. Data Hilang: Definisi, Karakteristik & Penanganan (AB7) {#ab7}
+
+### Ringkasan Konsep
+
+**Tiga tipe data hilang** yang perlu Anda bedakan:
+
+```
+MCAR  → Hilang sepenuhnya acak. Tidak ada pola.
+        Penanganan: relatif aman; listwise deletion bisa digunakan.
+
+MAR   → Hilang bergantung pada variabel lain yang TERSEDIA.
+        Penanganan: imputasi berdasarkan variabel lain.
+
+MNAR  → Hilang bergantung pada nilai itu sendiri (tidak teramati).
+        Penanganan: paling sulit; perlu pertimbangan domain.
+```
+
+> **Penting untuk diingat:** Menghapus baris dengan `na.omit()` hanya aman jika data hilang berjumlah sedikit dan pola hilangnya adalah MCAR. Imputasi selalu lebih diutamakan.
+
+### Kode R: Deteksi & Penanganan Data Hilang
+
+```r
+# install.packages(c("VIM", "mice"))
+library(VIM)
+library(mice)
+
+# ---- Data contoh dengan NA ----
+set.seed(123)
+data_survei <- data.frame(
+  id        = 1:20,
+  usia      = c(25, 30, NA, 40, 35, 50, NA, 45, 55, 60,
+                28, NA, 38, 42, 33, 48, 52, 44, 58, 37),
+  pendidikan = c("S1","SMA","S1",NA,"S2","SMA","S1","S2",NA,"S1",
+                 "SMA","S1","S2","SMA",NA,"S1","S2","SMA","S1","S2"),
+  pendapatan = c(50, 60, 55, NA, 70, 65, 75, 80, NA, 90,
+                 45, 55, NA, 70, 60, 72, 85, 68, NA, 88)
+)
+
+# ---- 1. Deteksi Data Hilang ----
+cat("=== Jumlah NA per Kolom ===\n")
+print(colSums(is.na(data_survei)))
+
+cat("\nTotal NA:", sum(is.na(data_survei)), "\n")
+cat("Persentase NA:", round(mean(is.na(data_survei)) * 100, 2), "%\n")
+
+# Visualisasi pola data hilang
+aggr(data_survei,
+     col = c("#4E79A7", "#E15759"),
+     numbers = TRUE, sortVars = TRUE,
+     labels = names(data_survei),
+     cex.axis = 0.8, gap = 3,
+     ylab = c("Proporsi NA", "Pola NA"))
+
+# ---- 2. Imputasi Sederhana ----
+data_imp_mean <- data_survei
+data_imp_mean$usia[is.na(data_imp_mean$usia)] <-
+  mean(data_survei$usia, na.rm = TRUE)
+data_imp_mean$pendapatan[is.na(data_imp_mean$pendapatan)] <-
+  median(data_survei$pendapatan, na.rm = TRUE)
+
+cat("\n=== Setelah Imputasi Mean/Median ===\n")
+cat("NA tersisa:", sum(is.na(data_imp_mean[, c("usia", "pendapatan")])), "\n")
+
+# ---- 3. Imputasi Berganda (MICE) ----
+# Hanya kolom numerik dulu untuk demonstrasi
+data_num <- data_survei[, c("usia", "pendapatan")]
+
+imputed  <- mice(data_num, m = 5, maxit = 50, method = "pmm", seed = 42,
+                 printFlag = FALSE)
+data_completed <- complete(imputed, 1)
+
+cat("\n=== Hasil Imputasi MICE (dataset pertama) ===\n")
+cat("NA tersisa:", sum(is.na(data_completed)), "\n")
+print(head(data_completed))
+
+# ---- 4. Perbandingan distribusi sebelum & sesudah imputasi ----
+par(mfrow = c(1, 2))
+hist(data_survei$usia, main = "Usia: Sebelum Imputasi",
+     col = "#4E79A7", border = "white", na.rm = TRUE)
+hist(data_completed$usia, main = "Usia: Setelah MICE",
+     col = "#59A14F", border = "white")
+par(mfrow = c(1, 1))
+```
+
+### ✅ Cek Pemahaman AB7
+
+1. Dari output `colSums(is.na(...))`, variabel mana yang paling banyak nilai hilangnya?
+2. Mengapa imputasi dengan **mean** bisa berbahaya untuk data yang sangat skewed?
+3. Jelaskan perbedaan antara imputasi sederhana (mean/median) dan imputasi berganda (MICE) dalam satu paragraf singkat.
+4. Jika seseorang berpendapatan sangat tinggi cenderung *tidak* mengisi kolom pendapatan, tipe data hilang apa yang terjadi — MCAR, MAR, atau MNAR?
+5. **Tantangan:** Setelah imputasi, bandingkan mean dan SD kolom `usia` sebelum vs. sesudah. Apakah distribusi berubah signifikan?
+
+---
+
+## 7. How-To: Bercerita dengan Data — Prinsip & Praktik {#storytelling}
+
+### Mengapa Storytelling Itu Penting?
+
+> *"Keberhasilan seorang data scientist bukan karena kemampuan coding-nya. Keberhasilan ditentukan oleh seberapa baik ia meyakinkan pengambil keputusan untuk bertindak."*
+> — Business Science (2023)
+
+Visualisasi data tanpa narasi hanyalah kumpulan angka dan garis. **Data storytelling** adalah seni mengubah angka menjadi pesan yang menggugah tindakan.
+
+### Tiga Prinsip Utama (Adaptasi dari John Burn-Murdoch, Financial Times)
+
+**Prinsip 1: Gunakan Teks Sebagai Senjata Utama**
+
+Teks bukan sekedar judul. `annotate()` di ggplot2 memungkinkan Anda menempelkan penjelasan langsung di dalam grafik, tepat di titik yang ingin Anda sorot.
+
+> ⚠️ **Peringatan: Jaga tipe data kolom `bulan`**
+>
+> Jika sebelumnya Anda menjalankan kode Line Chart di AB2, kolom `bulan` di objek `tren_data`
+> bertipe **factor** (karakter). Objek `tren` di bawah ini berbeda dan harus tetap bertipe
+> **integer** (`1:12`). Jangan menimpa `tren$bulan` dengan `factor(...)` — itulah penyebab
+> error `Discrete values supplied to continuous scale`.
+>
+> Jika ragu, cek dulu dengan `class(tren$bulan)`. Seharusnya hasilnya `"integer"`.
+> Jika sudah berubah menjadi `"factor"`, reset dengan menjalankan ulang blok pembuatan data di bawah.
+
+Kita membangun **dua versi grafik** dari data yang sama — ini adalah cara terbaik untuk
+menunjukkan *nilai tambah* storytelling kepada mahasiswa: visualisasi yang identik secara
+data, tetapi sangat berbeda dalam kemampuannya menyampaikan pesan.
+
+```r
+library(ggplot2)
+
+# ---- Data dasar: bulan sebagai INTEGER 1:12, JANGAN diubah ----
+tren <- data.frame(
+  bulan = 1:12,
+  nilai = c(100, 105, 98, 110, 120, 115, 130, 145, 140, 160, 175, 190)
+)
+
+# Verifikasi tipe data sebelum lanjut:
+# class(tren$bulan)  # harus: "integer"
+
+# ===========================================================
+# PLOT 1 — Versi sederhana (seperti di AB2, tanpa anotasi)
+# Label bulan ditampilkan via scale_x_continuous + labels
+# BUKAN dengan mengubah tren$bulan menjadi factor
+# ===========================================================
+ggplot(tren, aes(x = bulan, y = nilai)) +
+  geom_line(color = "#E15759", linewidth = 1.2) +
+  geom_point(color = "#E15759", size = 3) +
+  scale_x_continuous(
+    breaks = 1:12,
+    labels = month.abb        # tampilkan Jan–Dec, tapi sumbu tetap numerik
+  ) +
+  labs(
+    title = "Tren Penjualan Jan–Des 2024",
+    x = "Bulan", y = "Penjualan (juta Rp)"
+  ) +
+  theme_minimal()
+
+# ===========================================================
+# PLOT 2 — Versi storytelling (dengan anotasi peristiwa)
+# Jalankan setelah Plot 1; pastikan tren$bulan masih integer
+# ===========================================================
+ggplot(tren, aes(x = bulan, y = nilai)) +
+  geom_line(color = "#4E79A7", linewidth = 1.5) +
+  geom_point(color = "#4E79A7", size = 2.5) +
+
+  # Anotasi: garis & label peristiwa penting
+  geom_vline(xintercept = 7, linetype = "dashed",
+             color = "#E15759", alpha = 0.7) +
+  annotate("text", x = 7.3, y = 105,
+           label = "Kampanye\nPemasaran\nDimulai",
+           hjust = 0, size = 3.2, color = "#E15759") +
+
+  # Anotasi: kotak sorot periode akselerasi
+  annotate("rect", xmin = 10, xmax = 12,
+           ymin = 155, ymax = 195,
+           alpha = 0.1, fill = "#59A14F") +
+  annotate("text", x = 11, y = 197,
+           label = "Pertumbuhan\nAkseleratif",
+           size = 3.2, color = "#59A14F") +
+
+  # Judul yang bercerita — bukan sekadar label
+  labs(
+    title    = "Kampanye Juli Mendorong Pertumbuhan Penjualan 90%",
+    subtitle = "Dari 100 juta (Jan) menjadi 190 juta (Des) — lonjakan terbesar pasca-kampanye",
+    caption  = "Catatan: Satuan dalam juta Rupiah | Data: Simulasi 2024",
+    x = "Bulan", y = "Penjualan (juta Rp)"
+  ) +
+  scale_x_continuous(
+    breaks = 1:12,
+    labels = month.abb        # sama seperti Plot 1: numerik dengan label teks
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title    = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(color = "gray40", size = 10),
+    plot.caption  = element_text(color = "gray60", size = 8)
+  )
+```
+
+> 💡 **Bandingkan Plot 1 dan Plot 2.** Data yang divisualisasikan persis sama.
+> Apa yang membuat Plot 2 lebih informatif? Catat perbedaannya sebelum melanjutkan ke Prinsip 2.
+
+**Prinsip 2: Kenali Audiens Anda**
+
+Visualisasi yang sama dapat menyampaikan pesan berbeda tergantung kepada siapa Anda berbicara:
+
+| Audiens | Yang Mereka Butuhkan | Pendekatan Visualisasi |
+|---|---|---|
+| **Eksekutif / Manajemen** | Kesimpulan cepat, implikasi bisnis | Satu grafik kunci + judul yang bercerita |
+| **Analis / Rekan Kerja** | Detail teknis, metodologi | Grafik lengkap + kode + statistik deskriptif |
+| **Publik Umum** | Konteks, relevansi personal | Infografik, perbandingan familiar |
+| **Mahasiswa / Akademisi** | Ketelitian, reproducibility | Kode lengkap + referensi + interpretasi |
+
+**Prinsip 3: Pilih Grafik Berdasarkan Pesan, Bukan Kebiasaan**
+
+```
+Pertanyaan panduan sebelum memilih grafik:
+┌──────────────────────────────────────────────────────────┐
+│ "Apakah saya sedang MEMBANDINGKAN?"   → Bar chart        │
+│ "Apakah saya melihat TREN WAKTU?"     → Line chart       │
+│ "Apakah saya melihat HUBUNGAN?"       → Scatter plot     │
+│ "Apakah saya melihat DISTRIBUSI?"     → Histogram/Boxplot│
+│ "Apakah saya melihat PROPORSI?"       → Bar/Pie (<5 slice)│
+│ "Apakah ada POLA dalam MATRIKS?"      → Heatmap          │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Framework Bercerita dengan Data (5-Langkah)
+
+```
+Langkah 1: KONTEKS
+  → Siapa audiensnya? Apa keputusan yang perlu mereka ambil?
+
+Langkah 2: PERTANYAAN
+  → "Data ini menjawab pertanyaan APA?"
+
+Langkah 3: DATA
+  → Bersihkan, transformasi jika perlu; tangani nilai hilang.
+
+Langkah 4: VISUALISASI
+  → Pilih grafik yang tepat; tambahkan teks, anotasi, highlight.
+
+Langkah 5: NARASI
+  → Satu kalimat utama: "Data ini menunjukkan bahwa..."
+    Lanjutkan dengan implikasi dan rekomendasi.
+```
+
+### Kode R: Grafik Storytelling Lengkap
+
+```r
+library(ggplot2)
+
+# ---- Dataset: Nilai rata-rata per tutorial ----
+progress <- data.frame(
+  tutorial    = paste("TW", 1:8),
+  rata_rata   = c(72, 75, 78, 74, 80, 83, 85, 88),
+  target      = rep(80, 8)
+)
+
+ggplot(progress, aes(x = tutorial, y = rata_rata, group = 1)) +
+  # Area di bawah garis
+  geom_ribbon(aes(ymin = 60, ymax = rata_rata),
+              fill = "#4E79A7", alpha = 0.15) +
+  # Garis target
+  geom_hline(yintercept = 80, linetype = "dashed",
+             color = "#E15759", linewidth = 0.8) +
+  # Garis nilai rata-rata
+  geom_line(color = "#4E79A7", linewidth = 1.5) +
+  geom_point(aes(color = rata_rata >= 80), size = 3.5) +
+  scale_color_manual(values = c("FALSE" = "#E15759", "TRUE" = "#59A14F"),
+                     guide = "none") +
+  # Anotasi target
+  annotate("text", x = 8.3, y = 80.5,
+           label = "Target\n80", size = 3, color = "#E15759", hjust = 0) +
+  # Label nilai
+  geom_text(aes(label = rata_rata), vjust = -0.9, size = 3, color = "#333333") +
+
+  labs(
+    title    = "Nilai Rata-Rata Melampaui Target Mulai Tutorial ke-5",
+    subtitle = "Mahasiswa konsisten meningkat; 4 tutorial terakhir di atas target 80",
+    caption  = "• Titik merah = di bawah target | Titik hijau = di atas target",
+    x = "Tutorial", y = "Nilai Rata-Rata"
+  ) +
+  scale_y_continuous(limits = c(60, 95)) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title    = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray40"),
+    plot.caption  = element_text(color = "gray55", hjust = 0)
+  )
+```
+
+### ✅ Cek Pemahaman Storytelling
+
+1. Lihat grafik yang Anda buat. Apakah judul grafik Anda **mendeskripsikan data** atau **menyampaikan pesan**? Apa bedanya?
+2. Bayangkan Anda menyajikan data nilai mahasiswa kepada: (a) Ketua Program Studi, (b) mahasiswa itu sendiri. Apakah visualisasi dan narasi Anda akan berbeda? Jelaskan.
+3. **Refleksi:** Dari materi AB1–AB7 yang sudah Anda pelajari, ambil satu konsep yang menurut Anda paling penting. Buat *satu kalimat* yang bercerita tentang konsep itu kepada orang awam.
+
+---
+
+## BONUS: Studi Kasus — Dataset Mahasiswa AVD {#bonus}
+
+### Latar Belakang Cerita
+
+Anda adalah analis data di Program Studi Sistem Informasi, Universitas Terbuka. Ketua Program Studi meminta Anda menganalisis performa mahasiswa MSIM4310 selama satu semester dan **menyajikan temuan** kepada tim pengajar.
+
+Dataset ini mencakup 50 mahasiswa fiktif dengan variabel: nilai tugas, nilai UTS, nilai UAS, kehadiran tutorial, dan wilayah asal.
+
+### Dataset Dummy
+
+```r
+# ---- Buat dan simpan dataset ----
 set.seed(2024)
 n <- 50
 
 mahasiswa_avd <- data.frame(
-  id_mahasiswa   = paste0("SI", sprintf("%03d", 1:n)),
-  wilayah        = sample(c("Jawa","Sumatera","Kalimantan","Sulawesi","Lainnya"),
-                          n, replace = TRUE,
-                          prob = c(0.4, 0.25, 0.15, 0.12, 0.08)),
+  id_mahasiswa = paste0("SI", sprintf("%03d", 1:n)),
+  wilayah      = sample(c("Jawa", "Sumatera", "Kalimantan",
+                           "Sulawesi", "Lainnya"),
+                        n, replace = TRUE,
+                        prob = c(0.4, 0.25, 0.15, 0.12, 0.08)),
   hadir_tutorial = sample(3:8, n, replace = TRUE),
-  nilai_tugas    = pmin(pmax(round(rnorm(n, 78, 10)), 40), 100),
-  nilai_uts      = pmin(pmax(round(rnorm(n, 72, 12)), 40), 100),
-  nilai_uas      = pmin(pmax(round(rnorm(n, 75, 11)), 40), 100)
+  nilai_tugas    = round(rnorm(n, mean = 78, sd = 10)),
+  nilai_uts      = round(rnorm(n, mean = 72, sd = 12)),
+  nilai_uas      = round(rnorm(n, mean = 75, sd = 11))
 )
 
-# Tambahkan NA (simulasi MCAR)
+# Clip nilai ke rentang 0-100
+mahasiswa_avd[, 4:6] <- lapply(
+  mahasiswa_avd[, 4:6],
+  function(x) pmin(pmax(x, 40), 100)
+)
+
+# Tambahkan beberapa nilai hilang (simulasi MCAR)
 set.seed(7)
-mahasiswa_avd$nilai_uts[sample(1:n, 5)] <- NA
-```
-
-```r
-# ---- BAGIAN A: Tangani Data Hilang Dulu ----
-library(mice)
-
-# Cek NA
-cat("NA sebelum imputasi:", sum(is.na(mahasiswa_avd)), "\n")
-
-# Imputasi MICE pada kolom numerik
-set.seed(42)
-mhs_imp   <- mice(mahasiswa_avd[, c("nilai_tugas","nilai_uts","nilai_uas",
-                                     "hadir_tutorial")],
-                  m = 3, method = "pmm", maxit = 30,
-                  printFlag = FALSE)
-mhs_complete <- mahasiswa_avd
-mhs_complete[, c("nilai_tugas","nilai_uts","nilai_uas","hadir_tutorial")] <-
-  complete(mhs_imp, 1)
-
-cat("NA setelah imputasi:", sum(is.na(mhs_complete)), "\n")
+na_idx <- sample(1:n, 5)
+mahasiswa_avd$nilai_uts[na_idx] <- NA
 
 # Hitung nilai akhir (bobot: tugas 30%, UTS 30%, UAS 40%)
-mhs_complete$nilai_akhir <- with(mhs_complete,
-  round(0.30 * nilai_tugas + 0.30 * nilai_uts + 0.40 * nilai_uas, 1))
+mahasiswa_avd$nilai_akhir <- with(mahasiswa_avd,
+  round(0.30 * nilai_tugas + 0.30 * nilai_uts + 0.40 * nilai_uas, 1)
+)
+
+# Kategorisasi nilai akhir
+mahasiswa_avd$kategori <- cut(
+  mahasiswa_avd$nilai_akhir,
+  breaks = c(0, 55, 65, 75, 85, 100),
+  labels = c("E", "D", "C", "B", "A"),
+  right  = TRUE
+)
+
+head(mahasiswa_avd, 10)
 ```
 
-```r
-# ---- BAGIAN B: Regresi — Apakah Kehadiran Memprediksi Nilai Akhir? ----
-library(ggplot2)
+### Tantangan Storytelling (Eksplorasi Mandiri)
 
-model_mhs <- lm(nilai_akhir ~ hadir_tutorial, data = mhs_complete)
-
-cat("=== Model: nilai_akhir ~ hadir_tutorial ===\n")
-summary(model_mhs)
-
-# Visualisasi storytelling
-b0_mhs <- round(coef(model_mhs)[1], 2)
-b1_mhs <- round(coef(model_mhs)[2], 2)
-r2_mhs <- round(summary(model_mhs)$r.squared, 3)
-pval   <- round(summary(model_mhs)$coefficients[2, 4], 4)
-
-ggplot(mhs_complete, aes(x = hadir_tutorial, y = nilai_akhir)) +
-  geom_jitter(aes(color = nilai_akhir), width = 0.15,
-              size = 3, alpha = 0.7) +
-  geom_smooth(method = "lm", se = TRUE,
-              color = "#E15759", linewidth = 1.2) +
-  scale_color_gradient(low = "#E15759", high = "#59A14F",
-                       name = "Nilai Akhir") +
-  annotate("text", x = 3.2, y = max(mhs_complete$nilai_akhir) - 2,
-           label = paste0("y = ", b0_mhs, " + ", b1_mhs, "×hadir\n",
-                          "R² = ", r2_mhs, " | p = ", pval),
-           hjust = 0, size = 3.5, color = "#333333") +
-  labs(
-    title    = ifelse(pval < 0.05,
-                      "Kehadiran Tutorial Berpengaruh Signifikan terhadap Nilai Akhir",
-                      "Kehadiran Tutorial Tidak Berpengaruh Signifikan terhadap Nilai Akhir"),
-    subtitle = paste0("Slope = ", b1_mhs,
-                      ": setiap tambah 1 sesi hadir, nilai akhir naik ",
-                      abs(b1_mhs), " poin"),
-    x = "Jumlah Kehadiran Tutorial (sesi)",
-    y = "Nilai Akhir"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(plot.title = element_text(face = "bold"))
-```
-
-```r
-# ---- BAGIAN C: Regresi Berganda ----
-model_multi_mhs <- lm(nilai_akhir ~ hadir_tutorial + nilai_tugas + nilai_uts,
-                      data = mhs_complete)
-
-cat("=== Model Berganda ===\n")
-summary(model_multi_mhs)
-
-# Bandingkan R² sederhana vs berganda
-cat("\nR² sederhana (hadir saja)   :",
-    round(summary(model_mhs)$r.squared, 4), "\n")
-cat("R² berganda  (hadir+tugas+uts):",
-    round(summary(model_multi_mhs)$r.squared, 4), "\n")
-
-# Uji asumsi model berganda
-par(mfrow = c(2, 2))
-plot(model_multi_mhs, col = "#4E79A7", pch = 16)
-par(mfrow = c(1, 1))
-
-# VIF
-library(car)
-cat("\n=== VIF (Multikolinearitas) ===\n")
-vif(model_multi_mhs)
-```
-
-### ✅ Cek Pemahaman — Latihan Terpadu
-
-1. Setelah imputasi MICE, apakah distribusi `nilai_uts` berubah signifikan? Bandingkan mean dan SD sebelum dan sesudah.
-2. Dari model sederhana `nilai_akhir ~ hadir_tutorial`: apakah hubungannya signifikan (p < 0.05)? Berapa besar efeknya per sesi kehadiran?
-3. Dari model berganda: variabel mana yang **paling berpengaruh** terhadap nilai akhir berdasarkan p-value?
-4. Dari 4 diagnostic plots model berganda: apakah ada asumsi yang dilanggar?
-5. **Tantangan Storytelling:** Buat satu paragraf narasi (3–4 kalimat) yang merangkum temuan model regresi ini untuk dilaporkan kepada Ketua Program Studi. Bayangkan audiens Anda adalah non-statistisi.
+Gunakan dataset `mahasiswa_avd` untuk menjawab dan memvisualisasikan setiap pertanyaan berikut. Untuk setiap visualisasi, **tuliskan satu kalimat narasi** yang merangkum temuan utama.
 
 ---
 
-## Referensi {#referensi}
-
-**Data Hilang:**
-- finnstats (2021). *Handling missing values in R*. R-bloggers.
-  <https://www.r-bloggers.com/2021/04/handling-missing-values-in-r/>
-- Dokumentasi paket: `?mice::mice`, `?VIM::kNN`, `?naniar::vis_miss`
-
-**Analisis Regresi:**
-- Bobbitt, Z. (2022). *How to Plot lm() Results in R*. Statology.
-  <https://www.statology.org/plot-lm-in-r/>
-- DataCamp (2025). *How to Do Linear Regression in R*.
-  <https://www.datacamp.com/tutorial/linear-regression-R>
-- SFU (2020). *Lesson 9: Simple Linear Regression*. Basic Analytics in R.
-  <https://www.sfu.ca/~mjbrydon/tutorials/BAinR/regression.html>
-
-**Paket R yang Digunakan:**
+**Tantangan 1 — Distribusi & Pemusatan**
 ```r
-install.packages(c("ggplot2", "VIM", "naniar", "mice",
-                   "missForest", "corrplot", "car"))
+# Eksplorasi distribusi nilai akhir
+# Hint: Gunakan histogram + garis mean/median
+# Pertanyaan: Apakah distribusi mendekati normal?
+#             Di mana letak mean vs median?
+summary(mahasiswa_avd$nilai_akhir)
+shapiro.test(na.omit(mahasiswa_avd$nilai_akhir))
 ```
 
-> ⚠️ **Jangan gunakan `install.packages("DMwR")`** — paket ini tidak lagi tersedia
-> di CRAN. Gunakan `VIM::kNN()` sebagai pengganti.
+---
+
+**Tantangan 2 — Perbandingan Antar Wilayah**
+```r
+library(ggplot2)
+# Bandingkan nilai akhir berdasarkan wilayah
+# Hint: Boxplot per wilayah
+# Pertanyaan: Apakah ada wilayah yang performa mahasiswanya
+#             berbeda signifikan?
+
+# Mulai dari sini:
+ggplot(na.omit(mahasiswa_avd),
+       aes(x = reorder(wilayah, nilai_akhir, FUN = median),
+           y = nilai_akhir)) +
+  # Lengkapi sendiri...
+  labs(title = "???")   # Ganti ??? dengan judul yang bercerita
+```
+
+---
+
+**Tantangan 3 — Hubungan Kehadiran & Nilai**
+```r
+# Apakah lebih banyak hadir tutorial → nilai lebih tinggi?
+# Hint: Scatter plot + garis tren
+
+ggplot(na.omit(mahasiswa_avd),
+       aes(x = hadir_tutorial, y = nilai_akhir)) +
+  geom_point(aes(color = kategori), size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "gray30") +
+  # Tambahkan anotasi dan judul yang bercerita...
+  labs(title = "???")
+```
+
+---
+
+**Tantangan 4 — Data Hilang & Dampaknya**
+```r
+# Identifikasi: di nilai_uts ada 5 NA.
+# Pertanyaan:
+# (a) Berapa % data hilang di nilai_uts?
+# (b) Gunakan imputasi mean, lalu hitung kembali nilai_akhir.
+# (c) Apakah rata-rata nilai_akhir berubah signifikan?
+
+cat("% NA nilai_uts:", mean(is.na(mahasiswa_avd$nilai_uts)) * 100, "%\n")
+
+# Imputasi dan hitung ulang:
+mahasiswa_imp <- mahasiswa_avd
+mahasiswa_imp$nilai_uts[is.na(mahasiswa_imp$nilai_uts)] <-
+  mean(mahasiswa_avd$nilai_uts, na.rm = TRUE)
+
+# Bandingkan nilai_akhir sebelum vs sesudah
+# (hati-hati: sebelumnya ada NA dalam perhitungan!)
+```
+
+---
+
+**Tantangan 5 — Transformasi untuk Normalitas**
+```r
+# Nilai UTS memiliki beberapa karakteristik distribusi.
+# Cek: apakah nilai_uts (setelah imputasi) normal?
+# Jika tidak, transformasi apa yang tepat?
+
+shapiro.test(na.omit(mahasiswa_avd$nilai_uts))
+
+# Coba transformasi dan bandingkan hasil Shapiro-Wilk:
+# - sqrt(nilai_uts)
+# - log(nilai_uts)
+# - nilai_uts^2
+```
+
+---
+
+**Tantangan 6 (ADVANCED) — Dashboard Narasi Lengkap**
+
+Buat **satu halaman ringkasan** menggunakan layout `par(mfrow)` atau paket `patchwork` yang mencakup:
+1. Distribusi nilai akhir (histogram + garis mean)
+2. Boxplot per wilayah
+3. Scatter plot kehadiran vs. nilai
+4. Tabel proporsi kategori (A/B/C/D/E)
+
+Tambahkan **judul utama** halaman yang berfungsi sebagai "headline berita":
+*"Mahasiswa MSIM4310: [temuan utama Anda dalam satu kalimat]"*
+
+```r
+# install.packages("patchwork")
+library(patchwork)
+
+# Contoh struktur:
+# p1 <- ggplot(...) + ...
+# p2 <- ggplot(...) + ...
+# p3 <- ggplot(...) + ...
+# (p1 | p2) / p3 +
+#   plot_annotation(title = "Headline Narasi Anda",
+#                   theme = theme(plot.title = element_text(size = 14, face = "bold")))
+```
+
+---
+
+## Referensi & Bacaan Lanjutan
+
+**Visualisasi & Storytelling:**
+- Anderson, D. (2021). *Storytelling With Your Graphs In R Using ggplot2*. Policy in Numbers. <https://policyinnumbers.com/blog/2021/02/10/storytelling-with-your-graphs-in-r-using-ggplot2/>
+- Business Science (2023). *How to improve your storytelling with R*. R-bloggers. <https://www.r-bloggers.com/2023/06/how-to-improve-your-storytelling-with-r/>
+- Nussbaumer Knaflic, C. (2015). *Storytelling with Data*. Wiley.
+
+**Dokumentasi R:**
+- `?shapiro.test` — Uji normalitas Shapiro-Wilk
+- `?mice` — Multiple imputation (`mice` package)
+- `?ggplot2` — Sistem visualisasi `ggplot2`
+- `?VIM` — Visualisasi data hilang
+
+**Paket R yang Digunakan dalam Modul Ini:**
+```r
+install.packages(c("ggplot2", "VIM", "mice", "e1071", "patchwork"))
+```
 
 ---
 
