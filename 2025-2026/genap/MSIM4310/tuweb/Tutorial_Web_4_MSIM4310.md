@@ -80,8 +80,10 @@ Word Cloud / Bar Plot / Bigram Network / Heatmap
 #### Langkah 0 — Instalasi Paket
 
 ```r
+# ---- install packages 
 install.packages(c("dplyr","stringr","tidytext","ggplot2",
                    "wordcloud","RColorBrewer","igraph","ggraph"))
+
 ```
 
 > **Penjelasan:** Paket-paket ini perlu diinstal sekali saja. Setelah itu, setiap sesi R
@@ -115,6 +117,7 @@ df_text <- tibble::tibble(
     "Customer service tidak responsif, kecewa dengan pengalaman belanja"
   )
 )
+df_text
 ```
 
 **Penjelasan baris per baris:**
@@ -136,12 +139,14 @@ df_text <- tibble::tibble(
 #### Langkah 2 — Preprocessing Teks
 
 ```r
+# ---- Langkah 2 — Preprocessing Teks ----
 df_clean <- df_text %>%
   mutate(
     teks = str_to_lower(teks),
     teks = str_replace_all(teks, "[^a-z\\s]", " "),
     teks = str_squish(teks)
   )
+df_clean
 ```
 
 **Penjelasan langkah preprocessing:**
@@ -160,11 +165,13 @@ df_clean <- df_text %>%
 #### Langkah 3 — Stop Words Bahasa Indonesia
 
 ```r
+
+# ---- Langkah 3 - penggunaan stopwords ----
 stopwords_id <- c("dan", "yang", "di", "ke", "dari", "ini", "itu",
-                  "dengan", "untuk", "atau", "adalah", "tidak", "saya",
-                  "kami", "kita", "ada", "akan", "sudah", "bisa",
-                  "tapi", "namun", "juga", "sangat", "lebih", "sering",
-                  "saat", "perlu", "sesuai", "dalam")
+"dengan", "untuk", "atau", "adalah", "tidak", "saya",
+"kami", "kita", "ada", "akan", "sudah", "bisa",
+"tapi", "namun", "juga", "sangat", "lebih", "sering",
+"saat", "perlu", "sesuai", "dalam")
 
 stop_df <- tibble::tibble(word = stopwords_id)
 ```
@@ -184,6 +191,8 @@ Bahasa Indonesia** — sehingga kita perlu membuat daftar manual.
 #### Langkah 4 — Tokenisasi & Frekuensi
 
 ```r
+
+# ---- Langkah 4: tokenisasi & penghitungan frekuensi
 freq <- df_clean %>%
   tidytext::unnest_tokens(word, teks) %>%
   anti_join(stop_df, by = "word") %>%
@@ -236,6 +245,8 @@ baik sebagai pujian maupun kritik.
 #### Visualisasi 1 — Bar Plot Frekuensi
 
 ```r
+
+# ---- Visualisasi 1 ----
 top10 <- freq %>% slice_max(n, n = 10)
 
 ggplot(top10, aes(x = reorder(word, n), y = n)) +
@@ -274,6 +285,8 @@ ggplot(top10, aes(x = reorder(word, n), y = n)) +
 #### Visualisasi 2 — Word Cloud
 
 ```r
+
+# ---- Visualisasi 2 ----
 set.seed(123)
 wordcloud(
   words        = freq$word,
@@ -311,6 +324,7 @@ wordcloud(
 #### Visualisasi 3 — Bigram Network
 
 ```r
+# ---- Visualisasi 3 ----
 library(igraph)
 library(ggraph)
 
@@ -389,6 +403,7 @@ tidak terpisah. Ini informasi yang hilang jika hanya melihat frekuensi kata tung
 #### Visualisasi 4 — Analisis Sentimen
 
 ```r
+# ---- Visualisasi 4 ----
 sentimen_id <- tibble::tibble(
   word      = c("puas", "bagus", "cepat", "ramah", "recommended",
                 "oke", "prima", "kompetitif", "rapi", "baik",
@@ -517,14 +532,19 @@ Shiny     → aplikasi web reaktif penuh (UI + Server)
 #### Bagian A — plotly: Mengubah ggplot menjadi Interaktif
 
 ```r
-# install.packages(c("ggplot2", "plotly", "dplyr"))
+# ---- 0. Instalasi paket dan mengambil data ----
+install.packages(c(
+  "DT", "plotly", "leaflet",
+  "igraph", "ggraph",
+  "dplyr", "ggplot2", "stringr", "tidyr"
+))
 library(ggplot2)
 library(plotly)
 library(dplyr)
 
-data(mtcars)
-mtcars$model <- rownames(mtcars)
-mtcars$cyl   <- as.factor(mtcars$cyl)
+mtcars_plot <- mtcars
+mtcars_plot$model <- rownames(mtcars)
+mtcars_plot$cyl   <- as.factor(mtcars_plot$cyl)
 ```
 
 **Penjelasan setup:**
@@ -537,8 +557,10 @@ mtcars$cyl   <- as.factor(mtcars$cyl)
 
 ```r
 # ---- Langkah 1: Buat ggplot biasa ----
-p_static <- ggplot(mtcars,
-                   aes(x = wt, y = mpg,
+
+p_static <- ggplot(mtcars_plot,
+                   aes(x     = wt,
+                       y     = mpg,
                        color = cyl,
                        text  = paste0("Model: ", model,
                                       "<br>Berat: ", wt, " (1000 lbs)",
@@ -548,15 +570,12 @@ p_static <- ggplot(mtcars,
   scale_color_manual(values = c("4" = "#59A14F",
                                 "6" = "#F28E2B",
                                 "8" = "#E15759")) +
-  labs(
-    title  = "Hubungan Berat vs Efisiensi Bahan Bakar",
-    x      = "Berat Kendaraan (1000 lbs)",
-    y      = "Efisiensi (mpg)",
-    color  = "Silinder"
-  ) +
+  labs(title = "Hubungan Berat vs Efisiensi Bahan Bakar",
+       x     = "Berat Kendaraan (1000 lbs)",
+       y     = "Efisiensi (mpg)",
+       color = "Silinder") +
   theme_minimal()
 
-# ---- Langkah 2: Tambahkan interaktivitas dengan satu baris ----
 ggplotly(p_static, tooltip = "text")
 ```
 
@@ -601,6 +620,7 @@ plot_ly(df_cyl,
     yaxis  = list(title = "Jumlah Kendaraan"),
     showlegend = FALSE
   )
+
 ```
 
 **Sintaks `plot_ly()` vs `ggplotly()`:**
@@ -628,9 +648,10 @@ plot_ly(df_cyl,
 #### Bagian B — DT: Tabel Interaktif
 
 ```r
+
 library(DT)
 
-mtcars_tabel <- mtcars %>%
+mtcars_tabel <- mtcars_plot %>%
   select(model, mpg, wt, hp, cyl) %>%
   rename(
     Model    = model,
@@ -685,6 +706,9 @@ datatable(
 #### Bagian C — leaflet: Peta Interaktif
 
 ```r
+
+# ---- Tampilan peta dengan leaflet ----
+
 library(leaflet)
 
 kantor_ut <- data.frame(
@@ -800,7 +824,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-# install.packages(c("flexdashboard","dplyr","plotly","DT","tibble"))
+# install.packages(c("flexdashboard","dplyr","plotly","DT"))
 library(flexdashboard)
 library(dplyr)
 library(plotly)
@@ -818,9 +842,11 @@ mhs <- data.frame(
   nilai_uts   = pmin(pmax(round(rnorm(n, 72, 12)), 40), 100),
   nilai_uas   = pmin(pmax(round(rnorm(n, 75, 11)), 40), 100)
 )
-mhs$nilai_akhir <- round(0.3*mhs$nilai_tugas + 0.3*mhs$nilai_uts + 0.4*mhs$nilai_uas, 1)
+mhs$nilai_akhir <- round(0.3*mhs$nilai_tugas +
+                         0.3*mhs$nilai_uts   +
+                         0.4*mhs$nilai_uas, 1)
 mhs$kategori <- cut(mhs$nilai_akhir,
-                    breaks = c(0,55,65,75,85,100),
+                    breaks = c(0, 55, 65, 75, 85, 100),
                     labels = c("E","D","C","B","A"))
 ```
 
@@ -836,18 +862,21 @@ valueBox(nrow(mhs), icon = "fa-users", color = "#4E79A7")
 ### Rata-rata Nilai Akhir
 
 ```{r}
-valueBox(round(mean(mhs$nilai_akhir), 1),
-         icon = "fa-graduation-cap",
-         color = ifelse(mean(mhs$nilai_akhir) >= 75, "#59A14F", "#E15759"))
+rata <- round(mean(mhs$nilai_akhir), 1)
+valueBox(rata,
+         caption = "Rata-rata Nilai Akhir",
+         icon    = "fa-graduation-cap",
+         color   = ifelse(rata >= 75, "#59A14F", "#E15759"))
 ```
 
-### Persentase Lulus (≥ 65)
+### Persentase Lulus (>= 65)
 
 ```{r}
 pct_lulus <- round(mean(mhs$nilai_akhir >= 65) * 100, 1)
 valueBox(paste0(pct_lulus, "%"),
-         icon  = "fa-check-circle",
-         color = ifelse(pct_lulus >= 80, "#59A14F", "#F28E2B"))
+         caption = "Persentase Lulus",
+         icon    = "fa-check-circle",
+         color   = ifelse(pct_lulus >= 80, "#59A14F", "#F28E2B"))
 ```
 
 Row
@@ -861,8 +890,7 @@ plot_ly(mhs, x = ~nilai_akhir, type = "histogram",
         marker = list(color = "#4E79A7",
                       line  = list(color = "white", width = 1)),
         hovertemplate = "Nilai: %{x}<br>Jumlah: %{y}<extra></extra>") %>%
-  layout(title = "Distribusi Nilai Akhir",
-         xaxis = list(title = "Nilai Akhir"),
+  layout(xaxis = list(title = "Nilai Akhir"),
          yaxis = list(title = "Jumlah Mahasiswa"))
 ```
 
@@ -870,10 +898,10 @@ plot_ly(mhs, x = ~nilai_akhir, type = "histogram",
 
 ```{r}
 plot_ly(mhs, x = ~wilayah, y = ~nilai_akhir,
-        type = "box", color = ~wilayah,
+        type  = "box",
+        color = ~wilayah,
         hovertemplate = "%{y:.1f}<extra>%{x}</extra>") %>%
-  layout(title      = "Distribusi Nilai per Wilayah",
-         xaxis      = list(title = "Wilayah"),
+  layout(xaxis      = list(title = "Wilayah"),
          yaxis      = list(title = "Nilai Akhir"),
          showlegend = FALSE)
 ```
@@ -885,9 +913,10 @@ Row
 
 ```{r}
 datatable(
-  mhs[, c("id","wilayah","hadir","nilai_tugas","nilai_uts",
-          "nilai_uas","nilai_akhir","kategori")],
-  colnames = c("ID","Wilayah","Hadir","Tugas","UTS","UAS","Akhir","Grade"),
+  mhs[, c("id","wilayah","hadir","nilai_tugas",
+          "nilai_uts","nilai_uas","nilai_akhir","kategori")],
+  colnames = c("ID","Wilayah","Hadir","Tugas",
+               "UTS","UAS","Akhir","Grade"),
   options  = list(pageLength = 8, scrollX = TRUE),
   rownames = FALSE
 )
@@ -995,18 +1024,90 @@ mhs$kategori <- cut(mhs$akhir, breaks=c(0,55,65,75,85,100),
 # ---- UI ----
 ui <- dashboardPage(
   dashboardHeader(title = "Dashboard MSIM4310"),
-
+  
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Overview",   tabName = "overview",  icon = icon("tachometer-alt")),
-      menuItem("Eksplorasi", tabName = "eksplorasi", icon = icon("search")),
-      menuItem("Data",       tabName = "data",       icon = icon("table"))
+      menuItem("Overview",   tabName = "overview",
+               icon = icon("gauge")),          # FA5: tachometer-alt → FA6: gauge
+      menuItem("Eksplorasi", tabName = "eksplorasi",
+               icon = icon("magnifying-glass")), # FA5: search → FA6: magnifying-glass
+      menuItem("Data",       tabName = "data",
+               icon = icon("table"))
     ),
-    selectInput("filter_wilayah", "Filter Wilayah:",
-                choices = c("Semua", unique(mhs$wilayah)),
+    hr(),
+    selectInput("filter_wilayah",
+                label   = "Filter Wilayah:",
+                choices = c("Semua", sort(unique(mhs$wilayah))),
                 selected = "Semua")
   ),
-  ...
+  
+  dashboardBody(
+    # Warna KPI seragam dengan tema modul
+    tags$head(tags$style(HTML("
+      .small-box { border-radius: 4px; }
+      .skin-blue .main-header .logo { background-color: #2C3E50; }
+      .skin-blue .main-header .navbar { background-color: #2C3E50; }
+    "))),
+    
+    tabItems(
+      
+      # ---- Tab Overview ----
+      tabItem(tabName = "overview",
+              fluidRow(
+                valueBoxOutput("box_total",  width = 4),
+                valueBoxOutput("box_rata",   width = 4),
+                valueBoxOutput("box_lulus",  width = 4)
+              ),
+              fluidRow(
+                box(title       = "Distribusi Nilai Akhir",
+                    status      = "primary",
+                    solidHeader = TRUE,
+                    width       = 6,
+                    plotlyOutput("hist_nilai", height = "300px")),
+                box(title       = "Nilai per Wilayah",
+                    status      = "primary",
+                    solidHeader = TRUE,
+                    width       = 6,
+                    plotlyOutput("box_wilayah", height = "300px"))
+              )
+      ),
+      
+      # ---- Tab Eksplorasi ----
+      tabItem(tabName = "eksplorasi",
+              fluidRow(
+                box(title       = "Pilih Variabel",
+                    status      = "warning",
+                    solidHeader = TRUE,
+                    width       = 3,
+                    selectInput("var_x", "Sumbu X:",
+                                choices  = c("hadir","tugas","uts","uas"),
+                                selected = "hadir"),
+                    selectInput("var_y", "Sumbu Y:",
+                                choices  = c("akhir","tugas","uts","uas"),
+                                selected = "akhir"),
+                    hr(),
+                    helpText("Warna titik menunjukkan grade (A–E).")),
+                box(title       = "Scatter Plot Interaktif",
+                    status      = "primary",
+                    solidHeader = TRUE,
+                    width       = 9,
+                    plotlyOutput("scatter", height = "400px"))
+              )
+      ),
+      
+      # ---- Tab Data ----
+      tabItem(tabName = "data",
+              fluidRow(
+                box(title       = "Tabel Detail Mahasiswa",
+                    status      = "primary",
+                    solidHeader = TRUE,
+                    width       = 12,
+                    DTOutput("tabel"))
+              )
+      )
+    )
+  )
+)
 ```
 
 **Penjelasan komponen UI:**
@@ -1023,28 +1124,81 @@ ui <- dashboardPage(
 ---
 
 ```r
+
 # ---- Server ----
 server <- function(input, output) {
-
+  
   # Data reaktif berdasarkan filter wilayah
   data_filtered <- reactive({
     if (input$filter_wilayah == "Semua") mhs
     else mhs %>% filter(wilayah == input$filter_wilayah)
   })
-
+  
   # KPI Boxes
   output$box_total <- renderValueBox({
     valueBox(nrow(data_filtered()), "Total Mahasiswa",
              icon = icon("users"), color = "blue")
   })
-
+  
   output$box_rata <- renderValueBox({
     rata <- round(mean(data_filtered()$akhir), 1)
     valueBox(rata, "Rata-rata Nilai Akhir",
              icon  = icon("graduation-cap"),
              color = ifelse(rata >= 75, "green", "red"))
   })
-  ...
+  
+  output$box_lulus <- renderValueBox({
+    pct <- round(mean(data_filtered()$akhir >= 65) * 100, 1)
+    valueBox(paste0(pct, "%"), "Persentase Lulus (≥65)",
+             icon  = icon("check-circle"),
+             color = ifelse(pct >= 80, "green", "yellow"))
+  })
+  
+  # Histogram
+  output$hist_nilai <- renderPlotly({
+    plot_ly(data_filtered(), x = ~akhir, type = "histogram",
+            nbinsx = 12,
+            marker = list(color="#4E79A7",
+                          line=list(color="white",width=1))) %>%
+      layout(xaxis = list(title="Nilai Akhir"),
+             yaxis = list(title="Jumlah"))
+  })
+  
+  # Boxplot per wilayah
+  output$box_wilayah <- renderPlotly({
+    plot_ly(data_filtered(), x = ~wilayah, y = ~akhir,
+            type = "box", color = ~wilayah) %>%
+      layout(showlegend = FALSE,
+             xaxis = list(title="Wilayah"),
+             yaxis = list(title="Nilai Akhir"))
+  })
+  
+  # Scatter interaktif (DIPERBAIKI: tidak pakai aes_string yang deprecated)
+  output$scatter <- renderPlotly({
+    df <- data_filtered()
+    plot_ly(df,
+            x    = ~df[[input$var_x]],
+            y    = ~df[[input$var_y]],
+            type = "scatter",
+            mode = "markers",
+            color = ~kategori,
+            text  = ~paste0("ID: ", id,
+                            "<br>Wilayah: ", wilayah,
+                            "<br>", input$var_x, ": ", df[[input$var_x]],
+                            "<br>", input$var_y, ": ", df[[input$var_y]]),
+            hovertemplate = "%{text}<extra></extra>") %>%
+      layout(xaxis = list(title = input$var_x),
+             yaxis = list(title = input$var_y))
+  })
+  
+  # Tabel
+  output$tabel <- renderDT({
+    datatable(data_filtered(), rownames = FALSE,
+              options = list(pageLength=10, scrollX=TRUE))
+  })
+}
+
+shinyApp(ui = ui, server = server)
 ```
 
 **Konsep reaktivitas — jantung Shiny:**
