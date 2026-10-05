@@ -180,6 +180,8 @@ RAT juga membedakan model berbasis objek, record, dan fisik. Model ER menjelaska
 
 Secara tepat, pasien dengan ID 1 merupakan satu **entitas/instance**, sedangkan `Pasien` pada diagram mewakili **tipe entitas**. Dalam pembahasan sehari-hari, tipe entitas sering disebut singkat sebagai entitas. Kotak `Pasien` bukan berarti hanya ada satu pasien dalam sistem.
 
+Pendalaman entitas kuat dan entitas lemah tersedia pada [Bagian 4.2.5](#425-pendalaman-entity-strong-entity-dan-weak-entity), termasuk contoh data serta pemetaan kuncinya.
+
 #### 4.2.1 Komponen: deskripsi, penggunaan, dan contoh
 
 | Komponen | Deskripsi | Penggunaan dalam desain | Contoh |
@@ -247,6 +249,165 @@ Contoh tanggal lahir, kontak, dan alamat terurai merupakan tambahan penjelasan; 
 | Fisik | Tipe data dan pilihan implementasi pada DBMS | `INT`, `DATE`, `VARCHAR`, `NOT NULL`, FK, dan InnoDB dalam MariaDB |
 
 Ketiga baris ini menjelaskan tahapan pengembangan rancangan. Level fisik, konseptual, dan pandangan pengguna pada Bagian 3.5 menjelaskan abstraksi akses data; kedua pembagian tersebut berkaitan tetapi mempunyai tujuan penjelasan berbeda.
+
+#### 4.2.5 Pendalaman entity, strong entity, dan weak entity
+
+Bagian ini merupakan penjelasan tambahan tutor untuk memperinci simbol entitas kuat/lemah pada Panduan Praktik 1 dan varian entitas pada RAT AB 3. Gunakan contoh identitas pada sesi langsung; uraian dan SQL tambahan dapat dipelajari mandiri agar durasi tutorial tetap 90 menit.
+
+##### A. Apa yang dapat disebut entity?
+
+**Entity/entitas** adalah objek atau kejadian yang relevan bagi kebutuhan sistem dan perlu dibedakan dari objek/kejadian lain. Entitas tidak terbatas pada benda fisik: Pasien merupakan orang, Ruang merupakan tempat, sedangkan Pemeriksaan merupakan peristiwa. Identitas dan batas pencatatan ditetapkan dari kebutuhan, bukan hanya dari kata benda yang muncul dalam narasi.
+
+| Istilah | Pengertian | Contoh rumah sakit |
+| --- | --- | --- |
+| Entity type/tipe entitas | Definisi kategori objek beserta atribut dan aturannya | `Pasien` dengan ID, nama, alamat, dan jenis kelamin |
+| Entity instance/instance entitas | Satu objek tertentu dalam kategori tersebut | Pasien dengan `id_pasien = 1` |
+| Entity set/himpunan entitas | Kumpulan instance suatu tipe pada suatu keadaan data | Semua pasien yang sudah tercatat pada database saat ini |
+| Atribut | Informasi yang dimiliki objek | `nama_pasien` |
+| Nilai atribut | Isi atribut untuk satu instance | Nama `Pasien A` untuk pasien ID 1 |
+
+Pada pemetaan relasional sederhana, tipe entitas menjadi tabel, instance menjadi baris, dan atribut menjadi kolom. Pemetaan ini membantu memahami lab; pada rancangan yang lebih luas, satu konsep dapat memerlukan beberapa tabel, sehingga jumlah kotak konseptual tidak selalu sama dengan jumlah tabel fisik.
+
+**Cara memutuskan entitas atau atribut:** tanyakan apakah objek perlu mempunyai identitas, atribut, riwayat, atau hubungan sendiri. Pada lab, nama pasien merupakan atribut. Dokter merupakan entitas karena mempunyai ID, nama, spesialisasi, dan hubungan pemeriksaan. Jika spesialisasi hanya berupa label, ia dapat menjadi atribut dokter; jika perlu kode, uraian, serta aturan sendiri, ia dapat dimodelkan sebagai entitas terpisah. Pilihan tersebut mengikuti kebutuhan yang disepakati.
+
+##### B. Strong entity: identitas dapat ditentukan sendiri
+
+**Strong entity/entitas kuat** mempunyai pengenal lengkap dari atribut miliknya sendiri; pengenal itu tidak memerlukan identitas pemilik dari tipe entitas lain. Pengenal dapat berupa satu atribut atau beberapa atribut. Entitas kuat tidak harus mempunyai PK satu kolom.
+
+Pada lab, `Pasien` diidentifikasi oleh `id_pasien`. Nama dan alamat tidak dijadikan kunci karena bisa sama atau berubah.
+
+| id_pasien | nama_pasien | alamat_pasien |
+| --- | --- | --- |
+| 1 | Pasien A | Jl. Contoh 1 |
+| 2 | Pasien B | Jl. Contoh 2 |
+
+Mengetahui ID 1 cukup untuk memilih satu pasien dalam lingkup database lab; tidak perlu terlebih dahulu mengetahui dokter yang memeriksanya. Pasien yang belum diperiksa tetap dapat dicatat.
+
+**Identitas mandiri berbeda dari tidak mempunyai hubungan.** Sebuah entitas kuat boleh mempunyai FK atau diwajibkan berhubungan dengan entitas lain. Misalnya, Pegawai dengan `id_pegawai` yang unik tetap mempunyai identitas sendiri walaupun aturan organisasi mewajibkan setiap pegawai ditempatkan pada satu unit.
+
+Saat memilih pengenal, periksa keunikan menurut aturan kasus, kestabilan nilai, dan arti satu instance. Jika memakai ID buatan/surrogate seperti `id_pasien`, nyatakan juga aturan yang diperlukan untuk mencegah pencatatan ganda objek yang sama; ID unik saja tidak membuktikan dua baris mewakili dua orang berbeda.
+
+##### C. Weak entity: identitas memerlukan pemilik
+
+**Weak entity/entitas lemah** tidak mempunyai pengenal lengkap dari atributnya sendiri pada model yang dipilih. Identitasnya dilengkapi oleh identitas entitas pemilik melalui **identifying relationship/relasi identifikasi**.
+
+Pada contoh dasar dengan satu pemilik, ada lima unsur yang perlu dinyatakan:
+
+| Unsur | Peran | Contoh Faktur-BarisFaktur |
+| --- | --- | --- |
+| Entitas pemilik/owner | Menyediakan lingkup identitas anak | `Faktur` dengan kunci `no_faktur` |
+| Entitas lemah | Objek anak yang dibedakan di dalam pemilik tertentu | `BarisFaktur` |
+| Partial key/discriminator | Atribut atau gabungan atribut yang unik untuk anak-anak milik pemilik yang sama | `no_baris`; nomor 1 dapat dipakai lagi pada faktur lain |
+| Relasi identifikasi | Menghubungkan anak dengan pemilik yang melengkapi identitasnya | Faktur **memiliki** BarisFaktur |
+| Partisipasi total anak | Setiap anak harus mempunyai pemilik; pada contoh ini tepat satu | Setiap BarisFaktur harus mengacu ke satu Faktur |
+
+Identitas lengkap contoh ini adalah **`(no_faktur, no_baris)`**. Partial key bukan nilai unik untuk seluruh tabel anak. Partial key juga tidak harus satu kolom; pada kasus lain, beberapa atribut dapat diperlukan untuk membedakan anak dalam satu pemilik.
+
+##### D. Menelusuri identitas dengan contoh data
+
+Contoh berikut memakai nomor baris sebagai pembeda lokal. Ini merupakan variasi penjelasan, bukan penggantian tabel `transaksi` pada lab utama.
+
+| no_faktur dari pemilik | no_baris sebagai partial key | keterangan | jumlah | Identitas lengkap |
+| --- | --- | --- | --- | --- |
+| F001 | 1 | Buku Tulis | 2 | `(F001, 1)` |
+| F001 | 2 | Pulpen | 3 | `(F001, 2)` |
+| F002 | 1 | Buku Tulis | 1 | `(F002, 1)` |
+
+- `no_baris = 1` saja belum memilih satu baris: ada baris 1 pada F001 dan F002.
+- `no_faktur = F001` saja belum memilih satu baris: faktur itu mempunyai baris 1 dan 2.
+- Gabungan `(F001, 1)` memilih tepat satu baris.
+- Menambahkan baris baru dengan pasangan `(F001, 1)` yang sama melanggar identitas yang disepakati.
+- Baris tidak boleh mengacu ke F999 jika faktur F999 belum ada.
+
+Nama barang tidak dijadikan partial key pada variasi ini. Nomor baris memungkinkan barang yang sama dicatat pada beberapa baris faktur bila aturan bisnis mengizinkannya. Lab utama justru membatasi satu kode barang sekali per faktur; karena itu, ia memakai `(no_faktur, kode_barang)`.
+
+Contoh pembanding: **Gedung-Kamar**. Jika nomor kamar hanya unik dalam satu gedung, kamar 101 di G01 berbeda dari kamar 101 di G02. Identitas Kamar menjadi `(kode_gedung, no_kamar)`. Jika organisasi menetapkan kode kamar unik secara keseluruhan, keputusan identitas dan modelnya perlu ditinjau kembali.
+
+##### E. Membandingkan entitas kuat dan lemah
+
+| Aspek | Strong entity | Weak entity dalam contoh dasar |
+| --- | --- | --- |
+| Dasar identitas | Pengenal lengkap dari atributnya sendiri | Kunci pemilik bersama partial key |
+| Lingkup keunikan pengenal lokal | Pengenal lengkap unik dalam tipe entitas | Partial key hanya unik di antara anak pemilik yang sama |
+| Kebutuhan relasi identifikasi | Tidak diperlukan untuk melengkapi identitas | Diperlukan dengan pemilik identitas |
+| Kewajiban hubungan | Ditentukan aturan bisnis; dapat wajib atau opsional | Wajib berpartisipasi pada relasi identifikasi dengan pemilik |
+| Chen | Persegi panjang; atribut kunci digarisbawahi | Persegi panjang ganda, belah ketupat ganda, partial key bergaris bawah putus-putus, dan partisipasi total anak |
+| Pemetaan relasional yang langsung mengikuti identitas | PK berasal dari pengenal lengkap | PK gabungan memuat FK pemilik dan partial key |
+| Contoh pada pembahasan | `Pasien(id_pasien, ...)` | `BarisFaktur(no_faktur, no_baris, ...)` |
+
+Pada contoh Faktur-BarisFaktur, hubungan dari pemilik ke anak adalah satu ke banyak. Minimum anak milik satu pemilik ditentukan terpisah: faktur draf dapat belum mempunyai baris, sedangkan faktur terbit dapat diwajibkan mempunyai sedikitnya satu baris. **Partisipasi total anak tidak berarti pemilik wajib mempunyai anak pada setiap keadaan.**
+
+Entitas lemah tetap mempunyai PK setelah dipetakan ke tabel. Pernyataan “weak entity tidak mempunyai key sendiri” merujuk pada tidak adanya pengenal lengkap tanpa pemilik pada model konseptual, bukan berarti tabel hasil implementasinya boleh tanpa PK.
+
+##### F. Pemetaan ke MariaDB: contoh mandiri
+
+Contoh tambahan ini hanya menunjukkan identitas, FK pemilik, dan atribut baris. Jalankan mandiri pada database `tuweb02` setelah lab awal jika diperlukan. Nama tabel memakai akhiran `_weak_demo`; contoh ini tidak termasuk sepuluh tabel init lab dan tidak dijalankan dalam blok SQL 10 menit.
+
+```sql
+USE tuweb02;
+
+CREATE TABLE faktur_weak_demo (
+  no_faktur CHAR(4) NOT NULL,
+  tanggal DATE NOT NULL,
+  PRIMARY KEY (no_faktur)
+) ENGINE=InnoDB;
+
+CREATE TABLE baris_faktur_weak_demo (
+  no_faktur CHAR(4) NOT NULL,
+  no_baris INT NOT NULL,
+  keterangan VARCHAR(50) NOT NULL,
+  jumlah INT NOT NULL,
+  PRIMARY KEY (no_faktur, no_baris),
+  CONSTRAINT fk_baris_weak_faktur
+    FOREIGN KEY (no_faktur)
+    REFERENCES faktur_weak_demo (no_faktur)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+INSERT INTO faktur_weak_demo VALUES
+  ('F001', '2026-10-01'), ('F002', '2026-10-02');
+
+INSERT INTO baris_faktur_weak_demo VALUES
+  ('F001', 1, 'Buku Tulis', 2),
+  ('F001', 2, 'Pulpen', 3),
+  ('F002', 1, 'Buku Tulis', 1);
+
+SELECT * FROM baris_faktur_weak_demo
+WHERE no_faktur = 'F001' AND no_baris = 1;
+```
+
+Hasil query terakhir adalah satu baris Buku Tulis dengan jumlah 2. Pada tabel anak, `no_faktur` berperan sebagai **bagian PK sekaligus FK**, sedangkan `no_baris` melengkapi PK. Gabungan PK menolak pasangan yang sama; FK menolak referensi pemilik yang tidak ada. Tipe angka saja belum menjamin nomor baris dan jumlah positif; aturan tersebut memerlukan batasan atau validasi tambahan jika diterapkan.
+
+`ON DELETE RESTRICT` mencegah faktur yang masih dirujuk dihapus. Status weak entity tidak otomatis mengharuskan `ON DELETE CASCADE`: pilihan penghapusan mengikuti aturan retensi dan proses bisnis. Contoh ini menghindari hilangnya baris hanya karena pemilik dihapus.
+
+##### G. Ketergantungan identitas dan ketergantungan keberadaan
+
+**Ketergantungan identitas** berarti pengenal anak memerlukan pengenal pemilik. **Ketergantungan keberadaan** berarti aturan kasus tidak memperbolehkan anak dicatat tanpa objek terkait. Pada contoh weak entity, keduanya berlaku, tetapi ketergantungan keberadaan saja belum cukup untuk menyebut suatu entitas lemah.
+
+| Kasus | Analisis identitas | Kesimpulan dalam model yang digunakan |
+| --- | --- | --- |
+| BarisFaktur memakai `(no_faktur, no_baris)` | Nomor baris perlu lingkup faktur | Contoh weak entity |
+| Pemeriksaan lab mempunyai PK `id` dan FK pasien/dokter wajib terisi | Pemeriksaan dikenali dari ID peristiwa, bukan dari kunci pemilik bersama nomor lokal | Entitas peristiwa dengan identitas sendiri; FK wajib tidak otomatis menjadikannya weak entity |
+| Pegawai mempunyai ID unik dan FK unit kerja wajib terisi | ID pegawai lengkap tanpa kode unit | Contoh entitas kuat walaupun mempunyai hubungan wajib |
+
+Jika `BarisFaktur` diberi **surrogate key** `id_baris`, identitas teknis baris dapat memakai ID tersebut. Aturan bahwa nomor baris hanya unik per faktur tetap perlu dijaga, misalnya dengan `UNIQUE(no_faktur, no_baris)` dan FK wajib. Menambah surrogate key tidak otomatis menghapus kepemilikan atau aturan bisnis model konseptual.
+
+Pada ERD logis yang mengklasifikasikan garis berdasarkan komposisi PK, memakai PK `id_baris` membuat FK faktur tidak lagi menjadi bagian PK. Garisnya dapat ditampilkan sebagai non-identifying pada notasi tersebut. Bedakan perubahan representasi kunci logis dengan keputusan konseptual tentang objek anak; jelaskan keduanya dalam legenda dan asumsi.
+
+##### H. Pertanyaan untuk mahasiswa dan arah jawaban
+
+| Pertanyaan | Arah jawaban |
+| --- | --- |
+| Mengapa `Pasien A` bukan pengenal yang baik? | Nama dapat sama atau berubah; identitas pasien perlu pengenal yang sesuai aturan kasus |
+| Apakah dua baris bernomor 1 berarti datanya salah? | Belum tentu; F001-1 dan F002-1 berbeda karena pemiliknya berbeda |
+| Apa partial key BarisFaktur pada contoh? | `no_baris`; pengenal lengkapnya `(no_faktur, no_baris)` |
+| Apakah setiap tabel dengan FK merupakan weak entity? | Tidak; periksa apakah identitas lengkap memerlukan kunci pemilik |
+| Apakah setiap PK gabungan menandakan weak entity? | Tidak; identifikasi pemilik, partial key, dan makna objeknya, bukan hanya jumlah kolom PK |
+| Apakah tabel penghubung M:N selalu weak entity? | Tidak; ia dapat menjadi entitas asosiasi dengan keputusan identitas sendiri. PK gabungan FK saja belum cukup untuk menentukan label konseptualnya |
+| Apakah weak entity berarti tabel tidak boleh mempunyai PK? | Tidak; pemetaan relasional justru menetapkan PK lengkap dari pemilik dan pembeda lokal |
+| Haruskah penghapusan pemilik selalu menghapus anak otomatis? | Tidak; RESTRICT/CASCADE mengikuti aturan kasus, bukan nama jenis entitas |
+
+**Latihan 3 menit di dalam kegiatan ERD:** tunjukkan tiga baris pada Bagian D. Minta mahasiswa menjelaskan mengapa `no_baris` tidak cukup, menuliskan identitas F002 baris 1, serta membandingkannya dengan identitas Pasien 1. Gunakan sebagai variasi dari latihan 9 menit pada Bagian 5.5, bukan tambahan durasi sesi.
 
 ### 4.3 Jenis kunci
 
@@ -884,6 +1045,13 @@ Nomor halaman adalah urutan halaman PDF, termasuk sampul. PDF sumber tidak perlu
 - phpMyAdmin, [Docker image repository](https://github.com/phpmyadmin/docker): antarmuka web opsional.
 - Mermaid, [Entity Relationship Diagrams](https://mermaid.ai/open-source/syntax/entityRelationshipDiagram.html): sintaks diagram pendamping dalam Markdown, penanda kardinalitas, dan jenis garis hubungan.
 
-### 12.3 Status bahan
+### 12.3 Rujukan pendalaman entitas
+
+- University of Cape Town, [Entity-Relationship Modelling](https://www.cs.uct.ac.za/mit_notes/database/htmls/chp06.html): pengenalan entitas/instance, identitas, serta entitas kuat dan lemah.
+- Emory University, [ER Diagram](https://www.cs.emory.edu/~cheung/Courses/377/Syllabus/2-ER/ER-diagram.html) dan [Weak entity types and relational mapping](https://www.cs.emory.edu/~cheung/Courses/377/Syllabus/3-Relation/rel-db-design2b.html): notasi weak entity dan pemetaan identitas ke relasi.
+
+Contoh Pasien, BarisFaktur, Gedung-Kamar, dan SQL demo pada pendalaman disusun sebagai ilustrasi tutor. Rujukan tambahan melengkapi sumber unggahan, bukan mengganti capaian RAT atau isi BMP.
+
+### 12.4 Status bahan
 
 Materi merupakan ringkasan dan contoh pendamping yang disusun berdasarkan sumber unggahan. Data serta beberapa keputusan skema merupakan tambahan tutor. Diagram mengikuti skema lab, bukan salinan visual diagram PDF. Status pemeriksaan teknis tercatat dalam [VERIFIKASI.md](VERIFIKASI.md).
