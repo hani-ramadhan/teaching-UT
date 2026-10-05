@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+  <key id="d0" for="node" yfiles.type="nodegraphics"/>
+  <key id="d1" for="edge" yfiles.type="edgegraphics"/>
+  <graph id="G" edgedefault="undirected">
+    <node id="supplier">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="0" y="0" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">supplier
+PK kode_supplier
+nama_supplier</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="faktur">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="0" y="260" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">faktur
+PK no_faktur
+tanggal
+FK kode_supplier</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="barang">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="460" y="0" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">barang
+PK kode_barang
+nama_barang
+harga_daftar</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="transaksi">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="460" y="260" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">transaksi
+PK/FK no_faktur
+PK/FK kode_barang
+jumlah
+harga_transaksi</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <edge id="e0" source="supplier" target="faktur">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+kode_supplier</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e1" source="faktur" target="transaksi">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+no_faktur</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e2" source="barang" target="transaksi">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+kode_barang</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+  </graph>
+</graphml>
