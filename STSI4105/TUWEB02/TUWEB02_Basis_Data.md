@@ -13,7 +13,7 @@ Dokumen ini berisi pembahasan untuk dipakai saat tutorial, contoh yang dapat dij
 1. [Alur 90 menit dan capaian](#1-alur-90-menit-dan-capaian)
 2. [AB 1 - Orientasi](#2-ab-1---orientasi)
 3. [AB 2 - Basis data dan sistem basis data](#3-ab-2---basis-data-dan-sistem-basis-data)
-4. [AB 3 - Model data, kunci, dan model ER](#4-ab-3---model-data-kunci-dan-model-er)
+4. [AB 3 - Model data, kunci, dan komponen ERD](#4-ab-3---model-data-kunci-dan-komponen-erd)
 5. [AB 4 - Membuat ERD rumah sakit di yEd Live](#5-ab-4---membuat-erd-rumah-sakit-di-yed-live)
 6. [AB 5 - Normalisasi: UNF hingga 3NF](#6-ab-5---normalisasi-unf-hingga-3nf)
 7. [AB 6 - Redundansi dan denormalisasi](#7-ab-6---redundansi-dan-denormalisasi)
@@ -32,6 +32,7 @@ Setelah tutorial ini, mahasiswa diharapkan dapat:
 - Membedakan data, basis data, DBMS, dan sistem basis data.
 - Menjelaskan tiga level abstraksi data.
 - Menentukan entitas, atribut, kunci, relasi, dan kardinalitas.
+- Mendeskripsikan komponen ERD, memilih penggunaannya, dan memberi contoh sesuai aturan kasus.
 - Menggunakan lima tahap pembuatan ERD.
 - Menjelaskan anomali serta perubahan tabel dari UNF ke 3NF.
 - Membedakan penggunaan FK dengan duplikasi fakta yang bermasalah.
@@ -46,8 +47,8 @@ Capaian tersebut merupakan rumusan pendamping dari RAT AB 1-7. Pembahasan varias
 | --- | --- | --- | --- |
 | 0-5 | 5 | AB 1: orientasi | Peta belajar, aturan kelas, pertanyaan awal |
 | 5-15 | 10 | AB 2: konsep | Bandingkan daftar terpisah dengan basis data bersama |
-| 15-28 | 13 | AB 3: model dan kunci | Tentukan identitas pasien dan hubungan dokter-pasien |
-| 28-48 | 20 | AB 4: ERD | Latihan diagram sebagian di yEd Live dan umpan balik |
+| 15-28 | 13 | AB 3: model, kunci, dan komponen ERD | Kenali komponen, tentukan identitas, serta baca hubungan dokter-pasien |
+| 28-48 | 20 | AB 4: desain ERD | Contoh pemodelan, latihan sebagian di yEd Live, dan umpan balik |
 | 48-68 | 20 | AB 5: normalisasi | Telusuri faktur UNF-3NF dan alasan pemisahan |
 | 68-74 | 6 | AB 6: redundansi | Putuskan apakah total faktur perlu disimpan |
 | 74-84 | 10 | AB 7: SQL | Satu tabel demo untuk DDL dan CRUD |
@@ -157,7 +158,7 @@ Contoh operasi dasar:
 
 **Arah jawaban:** tidak selalu. Tampilan dan hak akses dapat berbeda dengan sumber data yang sama.
 
-## 4. AB 3 - Model data, kunci, dan model ER
+## 4. AB 3 - Model data, kunci, dan komponen ERD
 
 **Dasar sumber:** RAT hlm. 2; AK03 hlm. 2-6; simbol pada Panduan Praktik 1 hlm. 8-9.
 
@@ -173,16 +174,79 @@ Model data menjelaskan data, hubungan, dan batasan. Contoh batasan: satu pemerik
 
 RAT juga membedakan model berbasis objek, record, dan fisik. Model ER menjelaskan objek dan hubungannya pada tingkat konseptual. Model relasional menjelaskan struktur tabel. Model fisik membahas implementasi penyimpanan. Ini merupakan tingkat atau pendekatan pemodelan; jangan memperlakukannya sebagai tiga nama produk DBMS.
 
-### 4.2 Entitas, atribut, dan relasi
+### 4.2 Desain ERD dan komponen penyusunnya
 
-- **Entitas:** jenis objek yang dicatat, misalnya pasien atau dokter.
-- **Atribut:** sifat atau informasi objek, misalnya nama pasien.
-- **Relasi:** hubungan antartipe objek, misalnya dokter memeriksa pasien.
-- **Skema:** definisi struktur, misalnya nama tabel, kolom, kunci, dan batasan.
-- **Tuple/record:** satu baris data.
-- **Domain:** himpunan nilai yang diperbolehkan untuk sebuah atribut.
+**ERD (Entity Relationship Diagram)** merupakan gambaran tentang objek yang datanya perlu dicatat, sifat objek, hubungan antarobjek, dan aturan hubungan tersebut. Desain ERD dimulai dari kebutuhan dan aturan bisnis, lalu dipakai untuk memeriksa rancangan sebelum tabel dibuat.
 
-Model ER dapat dimulai dari objek dan relasi tanpa menetapkan semua tipe SQL. Skema relasional kemudian memetakan model tersebut ke tabel serta kunci.
+Secara tepat, pasien dengan ID 1 merupakan satu **entitas/instance**, sedangkan `Pasien` pada diagram mewakili **tipe entitas**. Dalam pembahasan sehari-hari, tipe entitas sering disebut singkat sebagai entitas. Kotak `Pasien` bukan berarti hanya ada satu pasien dalam sistem.
+
+#### 4.2.1 Komponen: deskripsi, penggunaan, dan contoh
+
+| Komponen | Deskripsi | Penggunaan dalam desain | Contoh |
+| --- | --- | --- | --- |
+| Entitas kuat | Tipe objek dengan identitas yang dapat ditentukan dari atributnya sendiri | Memodelkan objek yang perlu dibedakan satu per satu dan mempunyai data deskriptif | `Pasien`, diidentifikasi oleh `id_pasien`; ID 1 adalah Pasien A |
+| Entitas lemah | Tipe objek yang identitas lengkapnya memerlukan kunci entitas pemilik bersama pembeda lokal | Memodelkan bagian milik suatu objek ketika nomor lokal dapat berulang pada pemilik berbeda | Contoh tambahan: `BarisFaktur` dengan identitas `(no_faktur, no_baris)`; baris 1 pada F001 berbeda dari baris 1 pada F002 |
+| Atribut | Sifat objek atau hubungan yang perlu dicatat | Menetapkan informasi yang diperlukan; letakkan pada objek/peristiwa yang menentukan nilainya | `nama_pasien` milik Pasien; `waktu_periksa` dan `resep` milik peristiwa Pemeriksaan |
+| Atribut kunci/identifier | Atribut atau gabungan atribut yang membedakan setiap instance | Mencegah rancangan bergantung pada nama yang dapat sama atau berubah | `id_dokter` membedakan Dokter A dan Dokter B; pilihan PK/FK dirinci pada Bagian 4.3 |
+| Relasi/relationship | Hubungan bermakna antara tipe entitas | Menjelaskan keterkaitan dengan nama tindakan, sebelum memutuskan penempatan FK | Dokter **memeriksa** Pasien; Administrator **mencatat** pendaftaran |
+| Relasi identifikasi untuk entitas lemah | Hubungan yang menyertakan identitas pemilik dalam identitas anak | Memastikan pembeda lokal anak dibaca dalam lingkup pemiliknya | Faktur **memiliki** BarisFaktur; nomor baris saja tidak cukup sebagai identitas |
+| Kardinalitas maksimum | Batas satu atau banyak pada setiap arah hubungan | Menentukan 1:1, 1:N, atau M:N dan kebutuhan tabel penghubung | Satu dokter dapat mempunyai banyak pemeriksaan; satu pemeriksaan hanya mempunyai satu dokter pada lab |
+| Partisipasi minimum/optionalitas | Batas minimum nol atau satu pada setiap arah hubungan | Menjelaskan apakah objek wajib mempunyai hubungan atau boleh belum terhubung | Pasien boleh belum diperiksa: minimum 0; pemeriksaan wajib mempunyai pasien: minimum 1 |
+| Entitas asosiasi/peristiwa | Objek yang mewakili hubungan dan dapat menyimpan atribut hubungan | Memetakan M:N atau mencatat kejadian berulang dengan identitas per kejadian | `pasien_dokter` menyimpan ID pemeriksaan, dua FK, waktu, dan resep; satu pasangan dokter-pasien dapat muncul beberapa kali |
+
+Contoh `BarisFaktur` menggunakan nomor baris untuk menjelaskan entitas lemah. Skema faktur pada lab memakai `transaksi` dengan PK `(no_faktur, kode_barang)` berdasarkan asumsi satu barang sekali per faktur. Keduanya merupakan pilihan model berbeda; jangan menambahkan `no_baris` ke SQL lab tanpa meninjau asumsi dan kuncinya.
+
+**Istilah penghubung ke implementasi:** skema adalah definisi struktur beserta batasan; tuple/record adalah satu baris; domain adalah himpunan nilai yang diperbolehkan. FK merupakan mekanisme referensi pada skema relasional, sehingga tidak harus ditampilkan sebagai atribut terpisah pada ERD konseptual.
+
+#### 4.2.2 Simbol dan pilihan notasi
+
+Panduan Praktik 1 hlm. 8-9 menampilkan entitas, entitas dengan atribut, entitas lemah, relationship, relationship lemah, atribut, multivalue, atribut PK, derived attribute, dan penanda hubungan. Gunakan legenda agar arti bentuk jelas, terutama ketika berpindah dari diagram konseptual ke diagram tabel.
+
+| Komponen | Bentuk dalam notasi Chen yang umum diajarkan | Cara penggunaannya |
+| --- | --- | --- |
+| Entitas kuat | Persegi panjang | Beri nama tipe objek, misalnya `Pasien` |
+| Entitas lemah | Persegi panjang bergaris ganda | Sertakan pemilik, pembeda lokal, dan relasi identifikasinya |
+| Relasi | Belah ketupat yang terhubung ke entitas | Beri nama tindakan, misalnya `memeriksa` |
+| Relasi identifikasi/relationship lemah | Belah ketupat bergaris ganda | Hubungkan entitas lemah dengan pemilik identitasnya |
+| Atribut biasa | Oval | Hubungkan ke entitas atau relasi yang memiliki atribut |
+| Atribut kunci | Nama atribut digarisbawahi dalam oval | Tandai atribut pengenal; kunci gabungan menandai beberapa atribut |
+| Pembeda lokal/partial key | Nama atribut dengan garis bawah putus-putus | Contoh `no_baris`; identitas lengkap tetap memerlukan `no_faktur` |
+| Atribut multivalue | Oval bergaris ganda | Contoh beberapa nomor telepon; bukan satu kolom berisi daftar nomor |
+| Atribut turunan | Oval bergaris putus-putus | Contoh umur yang dihitung dari tanggal lahir |
+| Partisipasi | Garis tunggal untuk parsial, garis ganda untuk total | Bedakan boleh tidak berhubungan dengan wajib terlibat sedikitnya sekali |
+
+Dalam **Crow's Foot/Martin**, entitas umumnya berupa kotak dengan daftar atribut; hubungan berupa garis dengan penanda pada kedua ujung. Atribut tidak perlu digambar sebagai oval. Satu garis berarti batas satu, kaki gagak berarti banyak, dan lingkaran berarti minimum nol. Kombinasi penanda dijelaskan pada Bagian 4.4.
+
+**Entitas dengan atribut** pada palet merupakan cara menampilkan entitas bersama daftar atribut dalam satu kotak, bukan jenis entitas bisnis baru. Panah biasa tidak cukup untuk menyatakan kardinalitas. ERD juga tidak menyatakan urutan proses seperti diagram alir.
+
+Gunakan Chen saat menjelaskan perbedaan komponen konseptual. Untuk latihan yEd Live, gunakan Crow's Foot/Martin atau kotak berlabel seperti GraphML yang disediakan. Cantumkan notasi yang dipilih dan baca arti hubungan dalam dua arah. Jangan menggunakan arti garis putus-putus dari satu notasi untuk menafsirkan notasi lain.
+
+#### 4.2.3 Jenis atribut dan keputusan penggunaannya
+
+| Jenis atribut | Deskripsi | Kapan digunakan | Contoh dan pemetaan |
+| --- | --- | --- | --- |
+| Sederhana/simple | Tidak diuraikan lagi untuk kebutuhan model | Ketika satu nilai sudah memenuhi kebutuhan pencatatan | `jenis_kelamin` pada lab; nilai yang diperbolehkan tetap perlu aturan domain |
+| Komposit/composite | Dapat diuraikan menjadi beberapa bagian bermakna | Ketika bagian perlu dicari, diurutkan, atau diperbarui terpisah | Tambahan contoh: alamat terdiri dari jalan, kota, dan kode pos; jika diperlukan, petakan ke kolom masing-masing |
+| Bernilai tunggal/single-valued | Satu instance mempunyai paling banyak satu nilai atribut pada keadaan yang dimodelkan | Ketika satu nilai sudah mencukupi untuk satu objek | Satu `nama_pasien` pada model lab |
+| Bernilai banyak/multivalued | Satu instance dapat mempunyai beberapa nilai atribut | Ketika beberapa nilai harus dicatat terpisah dan lengkap | Tambahan contoh: beberapa nomor kontak pasien; petakan ke tabel `kontak_pasien(id_pasien, nomor_kontak)` dengan kunci/batasan yang sesuai |
+| Tersimpan/stored | Nilainya dicatat sebagai fakta dasar | Ketika nilai diperlukan sebagai dasar pengolahan atau bukti kejadian | `waktu_periksa` dan `harga_transaksi` pada lab disimpan sebagai fakta kejadian |
+| Turunan/derived | Nilainya diperoleh dari atribut lain dengan aturan perhitungan | Ketika nilai dapat dihitung dan perlu mengikuti perubahan waktu/data dasar | Tambahan contoh: umur dihitung dari tanggal lahir dan tanggal acuan; total faktur dihitung dari jumlah dan harga transaksi |
+
+Kategori tersebut mengukur aspek berbeda. Atribut dapat sekaligus sederhana dan bernilai tunggal. Atribut komposit tidak otomatis multivalue: satu alamat dapat mempunyai beberapa bagian tanpa berarti pasien mempunyai beberapa alamat.
+
+**Penempatan atribut:** tanggal pemeriksaan berbeda antarperistiwa sehingga ditempatkan pada Pemeriksaan, bukan pada Pasien atau Dokter. Menaruh resep langsung pada Pasien akan mengaburkan pemeriksaan mana yang menghasilkan resep tersebut.
+
+Contoh tanggal lahir, kontak, dan alamat terurai merupakan tambahan penjelasan; kolom tersebut belum ditambahkan ke SQL lab. Atribut multivalue pada model konseptual perlu pemetaan relasional, bukan langsung disimpan sebagai teks berisi daftar.
+
+#### 4.2.4 Dari ERD konseptual ke implementasi
+
+| Tahap desain | Fokus | Hasil contoh |
+| --- | --- | --- |
+| Konseptual | Makna objek, atribut penting, hubungan, dan aturan bisnis | Pasien, Dokter, dan hubungan memeriksa beserta waktu pemeriksaan |
+| Logis relasional | Pemetaan ke tabel, kunci, FK, dan struktur hubungan | `pasien`, `dokter`, serta `pasien_dokter` dengan identitas pemeriksaan |
+| Fisik | Tipe data dan pilihan implementasi pada DBMS | `INT`, `DATE`, `VARCHAR`, `NOT NULL`, FK, dan InnoDB dalam MariaDB |
+
+Ketiga baris ini menjelaskan tahapan pengembangan rancangan. Level fisik, konseptual, dan pandangan pengguna pada Bagian 3.5 menjelaskan abstraksi akses data; kedua pembagian tersebut berkaitan tetapi mempunyai tujuan penjelasan berbeda.
 
 ### 4.3 Jenis kunci
 
@@ -196,21 +260,45 @@ Model ER dapat dimulai dari objek dan relasi tanpa menetapkan semua tipe SQL. Sk
 
 Kunci kandidat ditentukan oleh aturan data, bukan karena kolomnya diberi nama “kode”. Nama pasien dapat sama dan dapat berubah. Karena itu, nama tidak cocok sebagai PK dalam kasus ini.
 
-### 4.4 Kardinalitas dan partisipasi
+### 4.4 Kardinalitas, partisipasi, dan identifikasi
 
-Kardinalitas maksimum menjelaskan satu atau banyak. Partisipasi minimum menjelaskan apakah hubungan boleh tidak ada.
+#### 4.4.1 Kardinalitas maksimum: 1:1, 1:N, dan M:N
 
-| Hubungan | Arti contoh |
-| --- | --- |
-| 1:1 | Satu objek berkaitan dengan paling banyak satu objek pada sisi lain |
-| 1:N | Satu dokter dapat mempunyai banyak baris pemeriksaan |
-| M:N | Banyak dokter dapat memeriksa banyak pasien |
-| 0..1 | Hubungan boleh tidak ada; jika ada, paling banyak satu |
-| 1..1 | Harus tepat satu |
-| 0..N | Boleh tidak ada atau mempunyai banyak |
-| 1..N | Harus mempunyai sedikitnya satu |
+| Bentuk | Deskripsi dan penggunaan | Contoh serta konsekuensi desain |
+| --- | --- | --- |
+| 1:1 | Maksimum satu pada kedua arah; dipakai jika dua objek mempunyai hubungan berpasangan | Tambahan asumsi: satu pasien mempunyai paling banyak satu kartu aktif dan satu kartu aktif milik satu pasien. Pada tabel terpisah, FK yang diberi UNIQUE dapat membatasi maksimum satu; minimum partisipasi ditetapkan terpisah |
+| 1:N | Satu induk dapat mempunyai banyak anak, tetapi satu anak mengacu paling banyak ke satu induk | Dokter ke Pemeriksaan; letakkan `id_dokter` sebagai FK di `pasien_dokter`. Pada lab, FK wajib terisi sehingga satu pemeriksaan mempunyai tepat satu dokter |
+| M:N | Banyak objek pada kedua sisi dapat saling berhubungan | Dokter memeriksa banyak pasien dan pasien diperiksa banyak dokter; gunakan tabel peristiwa `pasien_dokter` untuk skema relasional |
+
+Angka 1 pada 1:N menyatakan batas maksimum satu, bukan otomatis berarti setiap objek wajib mempunyai hubungan. Minimum perlu dibaca dari aturan partisipasi.
+
+#### 4.4.2 Minimum dan maksimum pada ujung hubungan
+
+| Notasi min..max | Deskripsi | Penanda Crow's Foot/Martin | Penggunaan dan contoh |
+| --- | --- | --- | --- |
+| 0..1 | Boleh tidak ada, maksimum satu | Lingkaran dan satu garis | Contoh tambahan kartu aktif: satu pasien boleh belum mempunyai kartu aktif |
+| 1..1 | Wajib tepat satu | Dua garis | Setiap pemeriksaan pada lab mempunyai tepat satu pasien |
+| 0..N | Boleh tidak ada atau banyak | Lingkaran dan kaki gagak | Satu pasien boleh belum diperiksa atau mempunyai beberapa pemeriksaan |
+| 1..N | Wajib sedikitnya satu, boleh banyak | Satu garis dan kaki gagak | Asumsi bisnis tambahan: faktur yang sudah diterbitkan harus mempunyai sedikitnya satu detail |
+
+Penanda di dekat suatu entitas menyatakan berapa instance entitas **di ujung itu** yang dapat berkaitan dengan satu instance pada sisi seberangnya. Baca satu arah terlebih dahulu, kemudian balik arah baca. Contoh: dari satu pasien, lihat penanda di ujung Pemeriksaan untuk mengetahui jumlah pemeriksaannya.
+
+Dalam notasi Chen, partisipasi total memakai garis ganda dan parsial memakai garis tunggal. Pada Crow's Foot/Martin, minimum diwujudkan melalui penanda ujung. Aturan faktur terbit minimal satu detail tidak otomatis dijamin hanya dengan FK; membutuhkan validasi proses bisnis atau mekanisme tambahan.
+
+Penanda **tidak spesifik**, **1-tidak spesifik**, dan **N-tidak spesifik** pada tabel simbol sumber belum menyatakan semua batas hubungan. Jangan mengartikan tidak spesifik sebagai nol. Lengkapi batas yang belum dinyatakan berdasarkan aturan kasus sebelum diagram dijadikan dasar implementasi.
 
 Relasi dokter-pasien M:N perlu dipetakan menjadi tabel penghubung. Pada lab, `pasien_dokter` menyimpan satu peristiwa pemeriksaan. Setiap baris mengacu tepat ke satu dokter dan satu pasien. Satu dokter/pasien boleh belum mempunyai pemeriksaan, sehingga sisi peristiwanya memakai 0..N.
+
+#### 4.4.3 Identifikasi berbeda dari wajib berhubungan
+
+Pada ERD logis yang menilai identifikasi dari komposisi kunci, hubungan **identifying** memasukkan kunci induk ke identitas/PK anak. Hubungan **non-identifying** tetap memiliki FK, tetapi identitas anak ditentukan oleh kunci lain. Gunakan arti ini pada contoh diagram relasional berikut.
+
+| Keputusan | Penggunaan | Contoh |
+| --- | --- | --- |
+| Identifying | Identitas anak memerlukan identitas induk | `BarisFaktur` diidentifikasi dengan `(no_faktur, no_baris)`; `no_faktur` merupakan bagian PK sekaligus FK |
+| Non-identifying | Anak mempunyai identitas sendiri; FK menyatakan referensi | `pasien_dokter` mempunyai PK `id`; `id_pasien` dan `id_dokter` merupakan FK yang tidak menjadi bagian PK |
+
+Pada lab, FK Pemeriksaan wajib terisi walaupun tidak menjadi bagian PK. Jadi, **FK NOT NULL tidak otomatis membuat hubungan identifying**. FK juga tidak berarti atribut deskriptif induk harus disalin ke anak.
 
 ### 4.5 Varian model ER - bacaan singkat
 
@@ -260,6 +348,17 @@ Asumsi di atas merupakan keputusan latihan, bukan satu-satunya model rumah sakit
 
 PK/FK merupakan bagian pemetaan ke skema relasional. Pada model konseptual, hubungan dapat digambar lebih dahulu sebelum semua kolom FK ditulis.
 
+#### 5.2.1 Pembagian 20 menit pembahasan desain ERD
+
+| Menit sesi | Durasi | Kegiatan |
+| --- | --- | --- |
+| 28-33 | 5 | Tinjau komponen inti: entitas, atribut/kunci, relasi, dan min..max; kaitkan dengan narasi rumah sakit |
+| 33-37 | 4 | Tutor memodelkan Pasien-Dokter-Pemeriksaan dan menjelaskan penempatan waktu serta resep |
+| 37-46 | 9 | Mahasiswa melengkapi diagram kecil di yEd Live sesuai Bagian 5.5 |
+| 46-48 | 2 | Baca hubungan dalam dua arah dan koreksi satu kesalahan desain bersama |
+
+Blok AB 3 selama 13 menit memberi dasar model, kunci, dan komponen. Pada blok AB 4, komponen tersebut dipakai untuk merancang. Jenis atribut lanjutan, entitas lemah, dan EER dapat dibaca sebelum/setelah sesi; latihan langsung tetap satu model kecil sehingga total TUWEB 02 tidak melebihi 90 menit.
+
 ### 5.3 Tabel latihan
 
 | Tabel | PK | FK | Atribut lain |
@@ -306,6 +405,58 @@ yEd Live menyediakan palet ER dengan Martin notation. Berkas GraphML contoh pada
 Perguruan tinggi mempunyai mahasiswa, mata kuliah, dan dosen. Pada model sederhana dalam panduan, mahasiswa mengambil satu atau beberapa mata kuliah; setiap mata kuliah diajar satu dosen; seorang dosen dapat mengajar beberapa mata kuliah.
 
 Rancang relasi mahasiswa-mata kuliah M:N melalui tabel registrasi. Jika menambah semester, jelaskan bahwa identitas registrasi perlu mempertimbangkan semester. Model pengajaran nyata dapat lebih luas; ikuti batas kasus yang disepakati.
+
+### 5.7 Contoh ERD dan cara membacanya
+
+Diagram berikut merupakan potongan **ERD logis** dari skema rumah sakit, untuk memperlihatkan hubungan komponen dengan tabel lab. Diagram dapat dilihat langsung pada Markdown GitHub; untuk latihan mengedit tetap gunakan yEd Live dan [GraphML lengkap](diagrams/rumahsakit.graphml).
+
+```mermaid
+erDiagram
+    PASIEN ||..o{ PEMERIKSAAN : mempunyai
+    DOKTER ||..o{ PEMERIKSAAN : melakukan
+    PASIEN {
+        int id_pasien PK
+        varchar nama_pasien
+    }
+    DOKTER {
+        int id_dokter PK
+        varchar nama_dokter
+    }
+    PEMERIKSAAN {
+        int id PK
+        int id_pasien FK
+        int id_dokter FK
+        date waktu_periksa
+        varchar resep
+    }
+```
+
+`PEMERIKSAAN` adalah nama konsep yang dipetakan ke tabel `pasien_dokter`. Diagram hanya menampilkan atribut yang diperlukan untuk pembahasan; tabel lengkap tetap mengikuti Bagian 5.3 dan SQL lab.
+
+Cara membacanya:
+
+1. **Entitas:** Pasien dan Dokter mempunyai identitas sendiri. Pemeriksaan mewakili satu kejadian, bukan sekadar pasangan ID.
+2. **Atribut:** nama melekat pada objek; waktu dan resep melekat pada pemeriksaan. Pada SQL lab, resep boleh NULL, sedangkan waktu wajib terisi.
+3. **Kunci:** `id` membedakan setiap pemeriksaan; dua FK menunjukkan pasien dan dokter yang terlibat.
+4. **Relasi dan partisipasi:** satu pasien mempunyai 0..N pemeriksaan; setiap pemeriksaan mempunyai tepat satu pasien. Satu dokter melakukan 0..N pemeriksaan; setiap pemeriksaan mempunyai tepat satu dokter.
+5. **Identifikasi:** garis putus-putus pada Mermaid ini menandai non-identifying sesuai keputusan PK pada Bagian 4.4.3. Ini berbeda dari oval putus-putus untuk atribut turunan pada Chen. Garis GraphML contoh belum memakai pembeda identifying/non-identifying; baca label dan PK/FK-nya.
+
+**Contoh instance:** pemeriksaan ID 1 menghubungkan Pasien 1 dan Dokter 1 pada 2026-10-01; pemeriksaan ID 4 menghubungkan pasangan yang sama pada 2026-10-03. Nama pasien tetap satu fakta pada tabel pasien, sedangkan waktu pemeriksaan dapat berbeda per kejadian.
+
+### 5.8 Menguji desain sebelum membuat tabel
+
+| Pertanyaan pemeriksaan | Keputusan pada lab | Contoh kesalahan yang diperbaiki |
+| --- | --- | --- |
+| Apakah setiap objek/peristiwa mempunyai identitas yang sesuai? | Pasien memakai `id_pasien`; pemeriksaan memakai `id` | Memakai nama pasien sebagai PK padahal nama bisa sama |
+| Apakah atribut ditempatkan pada pemilik fakta yang benar? | Waktu dan resep berada pada pemeriksaan | Menaruh satu resep pada pasien sehingga riwayat pemeriksaan tertimpa |
+| Apakah hubungan mempunyai arti dalam dua arah? | Pemeriksaan mengacu tepat satu pasien dan satu dokter | Menggambar panah tanpa menjelaskan minimum/maksimum |
+| Apakah M:N sudah dapat dicatat sebagai baris relasional? | Pasien-Dokter dihubungkan melalui peristiwa pemeriksaan | Menaruh daftar ID dokter dalam satu sel pasien |
+| Apakah kejadian berulang dapat dicatat? | Pasangan pasien-dokter dapat mempunyai ID pemeriksaan berbeda | Membatasi pasangan FK menjadi PK gabungan sehingga pemeriksaan ulang tertolak |
+| Apakah aturan desain dapat diterapkan pada SQL? | PK, FK, NOT NULL, dan tindakan referensial mengikuti aturan lab | Menganggap gambar kardinalitas otomatis membuat constraint MariaDB |
+
+**Cek pemahaman:** minta mahasiswa menyebutkan satu entitas, dua atribut, satu relasi, PK, FK, dan arti minimum/maksimum dari diagram. Lalu tanyakan: “Jika satu pemeriksaan ditangani beberapa dokter, keputusan mana yang berubah?”
+
+**Arah jawaban:** hubungan Pemeriksaan-Dokter menjadi M:N. Diperlukan tabel penghubung pemeriksaan-dokter dan peninjauan letak atribut yang spesifik per dokter. Ini perubahan aturan kasus, bukan sekadar mengganti simbol pada diagram.
 
 ## 6. AB 5 - Normalisasi: UNF hingga 3NF
 
@@ -641,6 +792,8 @@ Pada sesi ini, SQL bertujuan menghubungkan rancangan dan operasi tabel dasar. JO
 
 **A. ERD rumah sakit:** lengkapi enam tabel, PK/FK, kardinalitas, dan daftar asumsi. Simpan berkas diagram yang dapat diedit serta gambar untuk ditinjau.
 
+Sertakan legenda notasi dan uraian singkat untuk entitas, atribut, kunci, relasi, serta partisipasi: deskripsikan komponennya, alasan penggunaannya, dan satu contoh instance. Bedakan komponen yang benar-benar ada pada skema lab dengan contoh tambahan seperti atribut multivalue dan entitas lemah.
+
 **B. ERD perguruan tinggi:** buat model mahasiswa-mata kuliah-dosen sesuai aturan kasus pada Bagian 5.6. Jelaskan perubahan jika semester ditambahkan.
 
 **C. Normalisasi:** dari tabel 1NF pada Bagian 6.4, tuliskan kunci kandidat, ketergantungan fungsi, perubahan 2NF, dan hasil 3NF. Beri satu contoh anomali yang dicegah.
@@ -729,6 +882,7 @@ Nomor halaman adalah urutan halaman PDF, termasuk sampul. PDF sumber tidak perlu
 - MariaDB, [Using Healthcheck](https://mariadb.com/docs/server/server-management/automated-mariadb-deployment-and-administration/docker-and-mariadb/using-healthcheck-sh): pemeriksaan kesiapan container.
 - Docker, [Using profiles with Compose](https://docs.docker.com/compose/how-tos/profiles/): profil GUI opsional.
 - phpMyAdmin, [Docker image repository](https://github.com/phpmyadmin/docker): antarmuka web opsional.
+- Mermaid, [Entity Relationship Diagrams](https://mermaid.ai/open-source/syntax/entityRelationshipDiagram.html): sintaks diagram pendamping dalam Markdown, penanda kardinalitas, dan jenis garis hubungan.
 
 ### 12.3 Status bahan
 
