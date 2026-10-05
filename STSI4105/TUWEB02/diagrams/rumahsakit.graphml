@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+  <key id="d0" for="node" yfiles.type="nodegraphics"/>
+  <key id="d1" for="edge" yfiles.type="edgegraphics"/>
+  <graph id="G" edgedefault="undirected">
+    <node id="pasien">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="0" y="0" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">pasien
+PK id_pasien
+nama_pasien
+alamat_pasien
+jenis_kelamin</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="dokter">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="650" y="0" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">dokter
+PK id_dokter
+nama_dokter
+spesialis</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="administrator">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="325" y="610" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">administrator
+PK id_admin
+nama_admin
+waktu_jaga</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="pasien_dokter">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="325" y="200" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">pasien_dokter
+PK id
+FK id_pasien
+FK id_dokter
+waktu_periksa
+resep</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="daftar">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="0" y="410" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">daftar
+PK id_daftar
+FK id_pasien
+FK id_admin</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="dokter_admin">
+      <data key="d0">
+        <y:ShapeNode>
+          <y:Geometry x="650" y="410" width="255" height="155"/>
+          <y:Fill color="#EAF2F8" transparent="false"/>
+          <y:BorderStyle color="#245A81" type="line" width="1.5"/>
+          <y:NodeLabel alignment="left" autoSizePolicy="content" fontFamily="Dialog" fontSize="13" modelName="internal" modelPosition="c" textColor="#102A43">dokter_admin
+PK id_data
+FK id_dokter
+FK id_admin</y:NodeLabel>
+          <y:Shape type="rectangle"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <edge id="e0" source="pasien" target="pasien_dokter">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_pasien</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e1" source="dokter" target="pasien_dokter">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_dokter</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e2" source="pasien" target="daftar">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_pasien</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e3" source="administrator" target="daftar">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_admin</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e4" source="dokter" target="dokter_admin">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_dokter</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e5" source="administrator" target="dokter_admin">
+      <data key="d1">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#52606D" type="line" width="1.2"/>
+          <y:Arrows source="none" target="none"/>
+          <y:EdgeLabel alignment="center" fontFamily="Dialog" fontSize="11" modelName="six_pos" modelPosition="tail" textColor="#102A43" backgroundColor="#FFFFFF">1 : 0..N
+id_admin</y:EdgeLabel>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+  </graph>
+</graphml>
