@@ -24,7 +24,7 @@ Nomor halaman di bawah mengikuti urutan halaman PDF, termasuk sampul.
 | RAT STSI4105 tahun 2025, hlm. 4, baris 8-11 | Praktikum SQL, transaksi, distribusi, instalasi VirtualBox | Menetapkan cakupan sesi sesuai pembagian TUWEB yang disepakati |
 | USA_Panduan_Prak_T3-1_STSI 4105 Edisi 2_ AB 11.pdf, bagian pengantar, instalasi, Ubuntu, dan pengecekan koneksi | VirtualBox dan lingkungan dua mesin | Sumber tambahan dari unggahan sebelumnya untuk AB 11; bukan salah satu dari empat lampiran terbaru |
 
-**Batas sesi:** konfigurasi replikasi aktif dan praktikum transaksi/distribusi secara penuh masuk AB 12/TUWEB 04. Demo transaksi pendek pada sesi ini membantu menjelaskan AB 9. AB 11 tetap membahas VirtualBox; Docker merupakan pilihan lingkungan SQL tutor, bukan pengganti otomatis kewajiban praktik VirtualBox pada RAT.
+**Batas sesi:** konfigurasi replikasi aktif dan praktikum transaksi/distribusi secara penuh masuk AB 12/TUWEB 04. Demo transaksi pendek pada sesi ini membantu menjelaskan AB 9. AB 11 tetap membahas VirtualBox. Jika VirtualBox tidak tersedia, tersedia [panduan alternatif Docker dan phpMyAdmin](ALTERNATIF_DOCKER_PHPMYADMIN.md), termasuk pilihan dua instance lokal. Bukti lingkungan alternatif dan bukti pemasangan VirtualBox dibedakan dalam pelaporan; ketentuan tugas resmi tetap mengikuti kelas.
 
 ### 1.2 Penyesuaian yang harus dijelaskan
 
@@ -61,13 +61,15 @@ Setelah sesi, mahasiswa diharapkan mampu:
 | 42-60 | 18 | Jelaskan ACID dan status transaksi; demo batal/sukses | Mencatat saldo sebelum/sesudah serta alasan COMMIT/ROLLBACK |
 | 60-70 | 10 | Tunjukkan konflik kunci pada dua koneksi; bahas schedule/deadlock | Menjelaskan pihak yang menunggu dan langkah membebaskan kunci |
 | 70-80 | 10 | Bandingkan strategi distribusi pada dua cabang | Memilih strategi dan menyebut satu konsekuensi |
-| 80-87 | 7 | Tunjukkan VM siap pakai dan pemeriksaan alamat jaringan | Membedakan VM, container, koneksi DB, dan node distribusi |
+| 80-87 | 7 | Tunjukkan VM siap pakai; jika tidak tersedia, gunakan demo Docker/phpMyAdmin alternatif | Membedakan VM, container, koneksi DB, dan node distribusi |
 | 87-90 | 3 | Exit ticket dan arahkan pekerjaan lanjutan | Menjawab tiga pertanyaan ringkas |
 | **Total** | **90** | | |
 
-**Aturan pelaksanaan:** unduh image, inisialisasi data, dan instalasi VirtualBox/Ubuntu dilakukan sebelum sesi. Saat ada kendala perangkat, tutor tetap mendemokan hasil dan mahasiswa mengerjakan prediksi/query. Instalasi ulang tidak mengambil waktu pembahasan inti. Query referensi tambahan dan konfigurasi jaringan lengkap dikerjakan di luar 90 menit.
+**Aturan pelaksanaan:** unduh image, inisialisasi data, dan instalasi VirtualBox/Ubuntu atau penyiapan paket Docker alternatif dilakukan sebelum sesi. Saat ada kendala perangkat, tutor tetap mendemokan hasil dan mahasiswa mengerjakan prediksi/query. Instalasi ulang tidak mengambil waktu pembahasan inti. Query referensi tambahan dan konfigurasi jaringan lengkap dikerjakan di luar 90 menit.
 
 ## 3. Persiapan sebelum kelas
+
+Jalur di bawah memakai server TUWEB 02. Jika VirtualBox tidak tersedia dan Anda membutuhkan lab mandiri atau simulasi dua instance, ikuti [panduan Docker/phpMyAdmin alternatif](ALTERNATIF_DOCKER_PHPMYADMIN.md). Pilih satu lingkungan agar port, password, dan hasil latihan tidak tertukar.
 
 ### 3.1 Jalankan server yang sudah tersedia
 
@@ -566,7 +568,7 @@ Tanya: “Kedua cabang membutuhkan daftar layanan yang sama; transaksi pemeriksa
 
 **Arah jawaban:** replikasi daftar layanan, partisi horizontal pemeriksaan per cabang, dan mekanisme konsolidasi terjadwal untuk laporan. Jelaskan toleransi keterlambatan, ID global, serta penanganan pasien lintas cabang. Tidak ada satu strategi terbaik tanpa kebutuhan yang jelas. Angka 10 menit merupakan asumsi kasus tutor, bukan ketentuan RAT.
 
-## 10. Virtualisasi dan AB 11 (menit 80-87)
+## 10. Virtualisasi dan alternatif Docker (menit 80-87)
 
 ### 10.1 Peran alat
 
@@ -595,6 +597,16 @@ Dua terminal menuju service `db` adalah **dua koneksi ke satu server**, bukan du
 
 Jika mengikuti panduan lama, sesuaikan nama menu dan pilihan instalasi dengan versi yang dipakai. Untuk kendala koneksi, periksa adapter, alamat, rute, dan aturan firewall yang relevan. Tidak perlu mematikan seluruh firewall untuk melakukan pemeriksaan terbatas. Pada Windows dengan Rancher Desktop/WSL dan VirtualBox, uji lingkungan terlebih dahulu; perilaku virtualisasi bergantung versi dan konfigurasi host.
 
+### 10.3 Jika VirtualBox tidak tersedia
+
+Gunakan [ALTERNATIF_DOCKER_PHPMYADMIN.md](ALTERNATIF_DOCKER_PHPMYADMIN.md). Panduan tersebut memuat dua jalur: memakai server TUWEB 02 yang sudah ada atau menjalankan [paket Compose mandiri](docker-alternatif/compose.yaml). Paket mandiri menyediakan satu MariaDB dan phpMyAdmin secara default; profil `dua-node` menambahkan MariaDB kedua dengan volume terpisah.
+
+Pada paket mandiri, akses web default adalah http://localhost:8081. Pilih Node A/B di phpMyAdmin, lalu periksa `SELECT @@hostname;`. Lakukan satu perubahan lokal di A dan tunjukkan bahwa data B belum berubah. Ini menjelaskan pemisahan instance; konfigurasi belum mengaktifkan replikasi atau akses terdistribusi terpadu.
+
+Gunakan pembagian 7 menit: 2 menit mengenali service, 2 menit memeriksa identitas server pada phpMyAdmin, dan 3 menit menjelaskan pemisahan data/jaringan. Bila perangkat hanya menjalankan satu node, tunjukkan satu instance dan lanjutkan dua node sebagai pekerjaan mandiri. Transaksi bertahap dan demo kunci tetap memakai CLI dengan koneksi terpisah ke server yang sama.
+
+**Checkpoint alternatif:** catat project/service, hostname server, database aktif, hasil query, dan perbedaan node/koneksi. Nyatakan alasan penggunaan Docker dalam laporan. Bukti ini menunjukkan capaian praktik alternatif, sedangkan pemenuhan tugas instalasi VirtualBox/Ubuntu mengikuti ketentuan kelas.
+
 ## 11. Penutup, tindak lanjut, dan pelaporan
 
 ### 11.1 Exit ticket (menit 87-90)
@@ -612,7 +624,7 @@ Jika mengikuti panduan lama, sesuaikan nama menu dan pilihan instalasi dengan ve
 3. Tunjukkan transfer batal dan sukses pada CLI; catat saldo serta total.
 4. Reproduksi lock wait dengan dua koneksi; catat ERROR 1205 dan lakukan ROLLBACK pada kedua sesi.
 5. Pilih strategi distribusi untuk kasus dua cabang serta tulis satu keuntungan dan satu beban operasional.
-6. Selesaikan praktik VirtualBox/Ubuntu dan bukti jaringan sesuai instruksi resmi kelas.
+6. Selesaikan praktik VirtualBox/Ubuntu dan bukti jaringan sesuai instruksi resmi kelas. Jika tidak tersedia, kerjakan jalur Docker/phpMyAdmin alternatif dan nyatakan lingkungan serta batas simulasi pada bukti praktik.
 
 Demo SQL tambahan merupakan latihan pendamping. Tutor menetapkan pengumpulan resmi sesuai kelas, bukan menganggap semua latihan ini wajib dinilai UT.
 

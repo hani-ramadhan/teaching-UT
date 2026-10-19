@@ -1,0 +1,59 @@
+name: tuweb03-alt
+
+services:
+  db-a:
+    image: mariadb:11.4
+    hostname: tuweb03-db-a
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Isi MARIADB_ROOT_PASSWORD pada .env}
+      MARIADB_DATABASE: tuweb02
+      MARIADB_USER: mahasiswa
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Isi MARIADB_PASSWORD pada .env}
+    ports:
+      - "127.0.0.1:${ALT_DB_A_PORT:-3308}:3306"
+    volumes:
+      - db_a_data:/var/lib/mysql
+      - ../sql/00-siapkan-lab.sql:/docker-entrypoint-initdb.d/00-siapkan-lab.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  db-b:
+    image: mariadb:11.4
+    hostname: tuweb03-db-b
+    profiles: ["dua-node"]
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Isi MARIADB_ROOT_PASSWORD pada .env}
+      MARIADB_DATABASE: tuweb02
+      MARIADB_USER: mahasiswa
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Isi MARIADB_PASSWORD pada .env}
+    ports:
+      - "127.0.0.1:${ALT_DB_B_PORT:-3309}:3306"
+    volumes:
+      - db_b_data:/var/lib/mysql
+      - ../sql/00-siapkan-lab.sql:/docker-entrypoint-initdb.d/00-siapkan-lab.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    environment:
+      PMA_HOSTS: db-a,db-b
+      PMA_PORTS: "3306,3306"
+      PMA_VERBOSES: "Node A,Node B (profil dua-node)"
+    ports:
+      - "127.0.0.1:${ALT_PMA_PORT:-8081}:80"
+    depends_on:
+      db-a:
+        condition: service_healthy
+
+volumes:
+  db_a_data:
+  db_b_data:

@@ -35,3 +35,11 @@ Docker/Rancher Desktop serta MariaDB 11.4 tidak tersedia untuk menjalankan paket
 6. Buka dua koneksi dengan ID berbeda. Ikuti urutan demo kunci pada materi: B menunggu dan mendapat ERROR 1205 setelah sekitar 5 detik; ROLLBACK pada B dan A; saldo tetap 100000/50000.
 7. Pastikan semua transaksi ditutup. Lakukan persiapan ulang hanya jika hasil latihan t3_ sudah tidak diperlukan.
 8. Periksa VM, sistem operasi guest, adapter jaringan, IP, serta koneksi sebelum sesi. Gunakan data fiktif dan hindari menampilkan password saat merekam.
+
+## Tambahan: alternatif Docker dan phpMyAdmin
+
+Panduan alternatif dan konfigurasi ditambahkan pada 19 Oktober 2026. Pemeriksaan statis mencakup sintaks YAML, jalur skrip init, pemisahan dua volume, port host yang berbeda, profil node kedua, dependensi kesehatan node A, serta daftar server phpMyAdmin yang selaras. Semua tautan lokal dan alokasi 90 menit diperiksa kembali. Skrip init memakai berkas 00 yang hasil relasionalnya telah diperiksa sebagaimana dicatat di atas.
+
+Startup satu/dua node, variabel lingkungan pada image yang ditarik, formulir login phpMyAdmin, eksekusi blok SQL pada web, dan koneksi antarnode belum dijalankan langsung pada Docker di sini. Jalur alternatif ini belum merupakan konfigurasi replikasi.
+
+Sebelum kelas, dari folder `docker-alternatif`, siapkan `.env`, jalankan `docker compose config --quiet`, kemudian `docker compose up -d --wait`. Periksa Node A pada port web 8081 dan hasil hitung awal. Aktifkan `docker compose --profile dua-node up -d --wait`, lalu periksa Node B, perbedaan hostname, pemisahan data, dan koneksi SQL A ke B sesuai panduan. Tutup seluruh transaksi dan pulihkan perubahan contoh setelah demo.

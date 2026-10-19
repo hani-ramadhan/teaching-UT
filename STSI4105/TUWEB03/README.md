@@ -12,6 +12,8 @@ Mulai dari [pembahasan lengkap TUWEB 03](TUWEB03_Basis_Data.md).
 | INSERT, UPDATE, DELETE, dan pembatalan | [02-dml.sql](sql/02-dml.sql) |
 | Transfer contoh: ROLLBACK dan COMMIT | [03-transaksi.sql](sql/03-transaksi.sql) |
 | Penguncian dua sesi dan pengantar VirtualBox | Langkah bertahap pada materi utama |
+| Jika VirtualBox tidak tersedia | [Panduan alternatif Docker dan phpMyAdmin](ALTERNATIF_DOCKER_PHPMYADMIN.md) |
+| Lab mandiri, satu atau dua instance MariaDB | [Compose alternatif](docker-alternatif/compose.yaml), [.env.example](docker-alternatif/.env.example) |
 | Hasil pemeriksaan dan batas pengujian | [VERIFIKASI.md](VERIFIKASI.md) |
 
 ## Mulai cepat
@@ -42,4 +44,6 @@ Untuk phpMyAdmin, jalankan `docker compose --profile gui up -d --wait`, buka htt
 
 ## Batas cakupan
 
-VirtualBox tetap dibahas sesuai RAT AB 11. Instalasi penuh dipersiapkan sebelum/di luar sesi; demo 7 menit memakai VM yang sudah siap. Replikasi aktif dan praktik distribusi penuh dilanjutkan pada TUWEB 04/AB 12. Data, pertanyaan, dan contoh tambahan tutor ditandai pada materi. Instruksi tugas resmi kelas tetap berlaku.
+VirtualBox tetap dibahas sesuai RAT AB 11. Jika tidak tersedia, gunakan [alternatif Docker dan phpMyAdmin](ALTERNATIF_DOCKER_PHPMYADMIN.md). Pilihan ini mencakup server lama atau paket mandiri, query melalui web, transaksi melalui CLI, serta dua instance opsional. Demo alternatif memakai blok 7 menit yang sama sehingga durasi tetap 90 menit. Bukti Docker menunjukkan lingkungan alternatif; ketentuan bukti tugas resmi mengikuti kelas.
+
+Replikasi aktif dan praktik distribusi penuh dilanjutkan pada TUWEB 04/AB 12. Data, pertanyaan, dan contoh tambahan tutor ditandai pada materi. Instalasi penuh dan pengunduhan image dilakukan sebelum/di luar sesi.
