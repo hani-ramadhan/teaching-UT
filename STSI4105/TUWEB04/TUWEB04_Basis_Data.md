@@ -368,10 +368,10 @@ Dari PowerShell, buat snapshot pada primary. Masukkan sandi root saat diminta. L
 ```powershell
 docker compose exec primary mariadb-dump -u root -p --single-transaction --master-data=2 --routines --triggers --databases rumahsakit --result-file=/tmp/rumahsakit.sql
 docker compose cp primary:/tmp/rumahsakit.sql ./rumahsakit.sql
-Select-String -Path .\rumahsakit.sql -Pattern '^-- CHANGE MASTER TO'
+(Select-String -LiteralPath .\rumahsakit.sql -Pattern '^-- CHANGE MASTER TO.*MASTER_LOG_FILE' | Select-Object -First 1).Line -replace '^--\s*', ''
 ```
 
-Catat nilai `MASTER_LOG_FILE` dan `MASTER_LOG_POS` pada baris komentar hasil ekspor. Keduanya menunjukkan titik awal replikasi setelah snapshot. Hindari perubahan struktur tabel selama ekspor.
+Simpan perintah `CHANGE MASTER TO` yang tercetak. PowerShell mengambil perintah itu dari komentar pada hasil ekspor dan menghapus awalan komentar. Perintah tersebut memuat `MASTER_LOG_FILE` dan `MASTER_LOG_POS` yang cocok dengan snapshot ini. Jika perintah tidak tercetak, periksa hasil ekspor sebelum melanjutkan. Hindari perubahan struktur tabel selama ekspor.
 
 Kirim salinan ke replica dan masuk sebagai root replica:
 
@@ -394,7 +394,7 @@ Pastikan impor bebas galat. Jika praktik transaksi sudah selesai sebelum ekspor,
 
 ### 4.3 Hubungkan dan periksa replica
 
-Tetap di sesi **root replica**. Ganti nilai contoh untuk nama file, posisi, dan sandi sebelum menjalankan blok ini. Port `3306` dan nama `primary` berasal dari jaringan internal Compose.
+Tetap di sesi **root replica**. Ganti `SANDI_REPL_ANDA` dengan sandi akun replikasi sebelum menjalankan blok ini. Port `3306` dan nama `primary` berasal dari jaringan internal Compose.
 
 ```sql
 CHANGE MASTER TO
@@ -402,10 +402,12 @@ CHANGE MASTER TO
   MASTER_PORT=3306,
   MASTER_USER='repl',
   MASTER_PASSWORD='SANDI_REPL_ANDA',
-  MASTER_LOG_FILE='mariadb-bin.000001',
-  MASTER_LOG_POS=1234,
   MASTER_USE_GTID=no;
+```
 
+Jalankan **perintah `CHANGE MASTER TO` kedua** yang tercetak di PowerShell pada bagian 4.2. Perintah ini mengatur file dan posisi dari **dump yang sudah Anda impor ke replica**. Setelah kedua perintah berhasil, mulai replikasi.
+
+```sql
 START REPLICA;
 SHOW REPLICA STATUS\G
 ```
@@ -473,6 +475,7 @@ Empat elemen di atas mengikuti instruksi Tugas 3. Kolom bukti adalah panduan rek
 | Primary atau replica belum `healthy` | Jalankan `docker compose logs --tail 80 primary replica`. Periksa apakah inisialisasi berhasil sebelum memakai GUI. |
 | Sandi gagal setelah mengubah `.env` | Volume lama menyimpan akun dan sandi dari inisialisasi pertama. Gunakan sandi yang berlaku pada volume itu. |
 | `Duplicate entry` pada praktik transaksi atau trigger | ID contoh sudah pernah dipakai. Gunakan data awal, atau bersihkan baris contoh dengan blok di bawah. Untuk uji replikasi, pakai kode obat baru. |
+| `Last_IO_Errno=1236` dan pesan `impossible position` saat pertama kali menghubungkan replica | Jika snapshot yang benar sudah diimpor dan replica belum menerapkan perubahan, jalankan `STOP REPLICA;` di replica. Jalankan perintah koordinat dari dump yang sama seperti pada bagian 4.2, lalu `START REPLICA;`. Jika dump yang diimpor tidak diketahui atau file binlog sudah tidak tersedia, siapkan snapshot baru dan gunakan koordinat dari snapshot itu. |
 | `Slave_IO_Running` bernilai `Connecting` atau `No` | Baca `Last_IO_Error`. Periksa nama host `primary`, port internal `3306`, akun `repl`, dan sandi replikasi. |
 | `Slave_SQL_Running` bernilai `No` | Baca `Last_SQL_Error`. Periksa apakah snapshot berhasil diimpor dan apakah file serta posisi diambil dari dump yang sama. |
 | Masuk ke server yang keliru | Jalankan `SELECT @@server_id, @@read_only;`. Hasil primary `1, 0`. Hasil replica `2, 1`. |
