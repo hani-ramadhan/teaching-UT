@@ -96,7 +96,18 @@ flowchart TD
     jenis --> klinis["ID pasien dan kolom klinis"]
 ```
 
-Lab memakai **replikasi satu arah**. Impor snapshot menyalin kondisi awal. Setelah itu, replica mengikuti perubahan dari primary melalui binary log. Replica dapat tertinggal sejenak. Kedua server berada dalam container terpisah pada satu komputer.
+#### Master dan replica dalam lab ini
+
+Bayangkan bagian farmasi memegang catatan stok utama, sementara klinik membaca salinannya. Jika bagian farmasi mencatat penjualan 5 unit, angka pada catatan utama berubah dari 20 ke 15. Salinan klinik berubah setelah perubahan itu sampai dan diterapkan.
+
+| Peran | Nama di lab | Tugas |
+| --- | --- | --- |
+| **Master** atau **primary** | `primary`, ID server `1` | Sumber perubahan. Mahasiswa menjalankan `INSERT`, `UPDATE`, atau `DELETE` di sini. MariaDB mencatat perubahan pada **binary log** atau **binlog**. |
+| **Replica** (istilah lama **slave**) | `replica`, ID server `2` | Menyimpan salinan lokal. MariaDB menerima dan menerapkan perubahan dari primary. Mahasiswa membaca hasil dengan `SELECT`. |
+
+Kedua peran dijalankan oleh dua server MariaDB pada satu komputer. Masing-masing memiliki data sendiri. Pada **replikasi satu arah** di lab ini, replica membuka koneksi ke primary dan arah perubahan data adalah **primary → replica**.
+
+Mulai dengan mengimpor **snapshot**, yaitu salinan data pada satu titik waktu. Nama file dan posisi binlog menjadi **penanda tempat melanjutkan** setelah snapshot. Pada replica, thread **I/O** menerima perubahan dan menyimpannya di **relay log**, yaitu antrean lokal. Thread **SQL** menerapkan perubahan ke tabel replica. Karena proses ini berjalan terpisah, hasil `SELECT` di replica dapat tertinggal sejenak.
 
 **Alur replikasi.** Garis dari atas ke bawah menunjukkan urutan kejadian. Amati kapan pembaca di replica melihat stok baru.
 
@@ -107,19 +118,21 @@ sequenceDiagram
     participant R as Replica
     M->>P: Ekspor snapshot awal
     M->>R: Impor snapshot dengan stok 20
+    R->>P: Sambung dari posisi snapshot
     M->>P: Jual 5 unit dan COMMIT
     Note over P: Stok 15 tercatat di binlog
     opt Jika replica belum menerapkan perubahan
         M->>R: Baca stok
         R-->>M: Stok 20
     end
-    P->>R: Kirim perubahan dari binlog
-    Note over R: Replica menerapkan perubahan
+    P-->>R: Kirim perubahan stok
+    Note over R: Thread I/O menyimpan event ke relay log
+    Note over R: Thread SQL menerapkan perubahan
     M->>R: Baca stok lagi
     R-->>M: Stok 15
 ```
 
-**Cek cepat.** Jika A005 sudah ada setelah impor snapshot, bagaimana cara membuktikan replikasi aktif? **Jawaban.** buat perubahan baru di primary, lalu periksa apakah perubahan muncul di replica.
+**Cek cepat.** Jika A005 sudah ada setelah impor snapshot, bagaimana cara membuktikan replikasi aktif? Buat perubahan baru di primary, lalu periksa apakah perubahan muncul di replica.
 
 ### AB 13 — Siapa yang mengelola data?
 
@@ -248,6 +261,8 @@ Gunakan terminal untuk langkah yang memerlukan koneksi tetap. Di PowerShell, jal
 docker compose exec primary mariadb -u mahasiswa -p rumahsakit
 ```
 
+Terminal A dan B pada praktik transaksi adalah **dua koneksi ke primary yang sama**. Keduanya menampilkan `@@server_id = 1`. Ini memungkinkan Anda mengamati isolasi transaksi dari koneksi lain. Praktik replikasi pada bagian 4 baru memakai dua server.
+
 Pada prompt MariaDB di terminal A, muat [definisi prosedur](sql/01-routines.sql). Buka berkas tersebut untuk melihat kapan setiap transaksi dimulai dan berakhir.
 
 ```sql
@@ -339,6 +354,21 @@ Gunakan terminal A atau tab **SQL** di phpMyAdmin pada **1 - Primary**, basis da
 
 Pada instalasi baru, ikuti langkah 4.1–4.4. Jika replica sudah dikonfigurasi pada latihan sebelumnya, periksa statusnya seperti pada langkah 4.3 dan langsung gunakan ID atau kode uji yang baru pada langkah 4.4.
 
+| Langkah | Server yang digunakan | Mengapa |
+| --- | --- | --- |
+| 4.1 — Buat akun `repl` | **Primary (1)** | Replica akan memakai akun ini untuk membaca binlog dari primary. |
+| 4.2 — Salin snapshot | **Ekspor dari primary (1)**, lalu **impor ke replica (2)** | Replica mendapat isi awal dan posisi untuk melanjutkan pembacaan binlog. |
+| 4.3 — Konfigurasi dan mulai replikasi | **Replica (2)** | Replica perlu mengetahui alamat primary, akun yang dipakai, dan posisi awal baca. |
+| 4.4 — Buktikan hasil | **`INSERT` di primary (1)**, lalu **`SELECT` di replica (2)** | Baris baru setelah snapshot membuktikan replica menerapkan perubahan yang diterimanya. |
+
+Jalankan pemeriksaan ini setelah membuka sesi baru atau berpindah server di phpMyAdmin.
+
+```sql
+SELECT @@server_id AS server_id, @@read_only AS read_only;
+```
+
+Pada lab ini, primary menampilkan **`1, 0`**. Replica menampilkan **`2, 1`**. Mode baca-saja berlaku untuk akun `mahasiswa` pada replica. Thread replikasi tetap dapat memperbarui tabel salinan.
+
 ### 4.1 Siapkan akun replikasi pada primary
 
 Di PowerShell, buka sesi admin. Masukkan sandi `MARIADB_ROOT_PASSWORD` saat diminta.
@@ -394,7 +424,7 @@ Pastikan impor bebas galat. Jika praktik transaksi sudah selesai sebelum ekspor,
 
 ### 4.3 Hubungkan dan periksa replica
 
-Tetap di sesi **root replica**. Ganti `SANDI_REPL_ANDA` dengan sandi akun replikasi sebelum menjalankan blok ini. Port `3306` dan nama `primary` berasal dari jaringan internal Compose.
+Tetap di sesi **root replica**. Perintah `CHANGE MASTER TO` berarti **beri tahu replica dari server mana ia harus membaca binlog**. Ganti `SANDI_REPL_ANDA` dengan sandi akun replikasi sebelum menjalankan blok ini. Port `3306` dan nama `primary` berasal dari jaringan internal Compose.
 
 ```sql
 CHANGE MASTER TO
@@ -416,12 +446,12 @@ Tunggu beberapa detik dan ulangi pemeriksaan jika perlu. Rekam status berikut sa
 
 | Kolom | Hasil yang diharapkan |
 | --- | --- |
-| `Master_Host` | `primary` |
-| `Slave_IO_Running` | `Yes`. Replica menerima perubahan dari primary. |
-| `Slave_SQL_Running` | `Yes`. Replica menerapkan perubahan tersebut. |
+| `Master_Host` | `primary`, yaitu sumber binlog yang dihubungi replica. |
+| `Slave_IO_Running` | `Yes`. Thread penerima berjalan dan menulis perubahan yang diterima ke relay log. |
+| `Slave_SQL_Running` | `Yes`. Thread penerap berjalan dan membaca perubahan dari relay log. |
 | `Last_IO_Error`, `Last_SQL_Error` | Kosong. |
 
-MariaDB memakai istilah lama pada nama perintah `CHANGE MASTER TO` dan beberapa kolom status. Jalankan `SHOW REPLICA STATUS;` jika memakai editor SQL yang tidak mendukung format keluaran CLI `\G`.
+Jika I/O berjalan tetapi SQL berhenti, replica masih bisa menerima perubahan sementara penerapannya terhenti. Periksa `Last_SQL_Error`. Jalankan `SHOW REPLICA STATUS;` jika memakai editor SQL yang tidak mendukung format keluaran CLI `\G`.
 
 ### 4.4 Buktikan perubahan baru muncul pada replica
 
