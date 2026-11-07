@@ -204,6 +204,14 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 notepad .env
 ```
 
+| Perintah PowerShell | Tujuan |
+| --- | --- |
+| `cd STSI4105\TUWEB04` | Masuk ke folder yang berisi `compose.yaml`, `.env.example`, dan skrip SQL lab. |
+| `docker version` | Periksa versi Docker CLI dan koneksinya ke engine Rancher Desktop. Bagian **Client** menunjukkan CLI tersedia. Bagian **Server** menunjukkan engine dapat dihubungi. |
+| `docker compose version` | Periksa bahwa perintah Compose tersedia dan tampilkan versinya. |
+| `if (-not (Test-Path .env)) { Copy-Item .env.example .env }` | Buat `.env` dari templat saat konfigurasi lokal belum ada. Jika berkas sudah ada, gunakan berkas itu. |
+| `notepad .env` | Buka konfigurasi lokal untuk mengisi sandi dan memeriksa port phpMyAdmin. |
+
 Ganti kedua sandi contoh dengan sandi khusus lab. Gunakan huruf dan angka agar mudah disalin ke `.env`. Simpan `.env` sebelum melanjutkan. Lalu jalankan:
 
 ```powershell
@@ -227,6 +235,9 @@ FROM information_schema.tables
 WHERE table_schema = 'rumahsakit'
 ORDER BY table_name;
 ```
+
+- `SELECT @@server_id, @@read_only` memeriksa identitas server dan mode tulis sebelum Anda mulai mengubah data. Di lab ini, hasil **`1, 0`** menunjukkan primary. Hasil **`2, 1`** menunjukkan replica dengan mode baca-saja.
+- Kueri ke `information_schema.tables` membaca daftar nama tabel dan mesin penyimpanannya. `WHERE table_schema = 'rumahsakit'` membatasi hasil ke database lab. `ORDER BY table_name` mengurutkan nama tabel agar hasil mudah dibandingkan. Periksa bahwa ketiga tabel memakai InnoDB untuk latihan transaksi.
 
 ### 2.1 Siapkan tabel dan data awal
 
@@ -361,7 +372,7 @@ Pada instalasi baru, ikuti langkah 4.1–4.4. Jika replica sudah dikonfigurasi p
 | 4.3 — Konfigurasi dan mulai replikasi | **Replica (2)** | Replica perlu mengetahui alamat primary, akun yang dipakai, dan posisi awal baca. |
 | 4.4 — Buktikan hasil | **`INSERT` di primary (1)**, lalu **`SELECT` di replica (2)** | Baris baru setelah snapshot membuktikan replica menerapkan perubahan yang diterimanya. |
 
-Jalankan pemeriksaan ini setelah membuka sesi baru atau berpindah server di phpMyAdmin.
+Jalankan pemeriksaan identitas server ini setelah membuka sesi baru atau berpindah server di phpMyAdmin. Cocokkan hasilnya dengan server yang tercantum pada langkah praktikum sebelum melanjutkan.
 
 ```sql
 SELECT @@server_id AS server_id, @@read_only AS read_only;
@@ -389,7 +400,13 @@ SHOW MASTER STATUS;
 exit
 ```
 
-Jika akun `repl` sudah ada, gunakan sandi yang Anda tetapkan saat membuatnya. Primary harus menampilkan ID `1`, `log_bin=1`, dan `binlog_format=ROW`. Nama file dan posisi pada `SHOW MASTER STATUS` berguna untuk memeriksa bahwa binlog aktif. Untuk konfigurasi replica, ambil koordinat dari **hasil ekspor** pada langkah berikut.
+| Perintah SQL atau CLI | Tujuan |
+| --- | --- |
+| `SELECT @@server_id, @@log_bin, @@binlog_format` | Pastikan Anda berada di primary (ID `1`), binlog aktif (`log_bin=1`), dan format yang dipakai adalah `ROW`. |
+| `CREATE USER IF NOT EXISTS` | Buat akun `repl` yang dipakai replica untuk masuk ke primary. Host `%` adalah wildcard yang mencakup alamat asal container replica. Jika akun sudah ada, sandi sebelumnya tetap berlaku. |
+| `GRANT REPLICATION SLAVE ON *.*` | Beri akun `repl` hak global untuk menerima perubahan dari binlog primary. |
+| `SHOW MASTER STATUS` | Tampilkan nama dan posisi binlog primary saat ini. Untuk konfigurasi replica, gunakan koordinat yang dicatat dalam snapshot pada langkah berikut. |
+| `exit` | Tutup klien MariaDB dan kembali ke PowerShell. |
 
 ### 4.2 Ekspor data awal dan impor ke replica
 
@@ -401,7 +418,20 @@ docker compose cp primary:/tmp/rumahsakit.sql ./rumahsakit.sql
 (Select-String -LiteralPath .\rumahsakit.sql -Pattern '^-- CHANGE MASTER TO.*MASTER_LOG_FILE' | Select-Object -First 1).Line -replace '^--\s*', ''
 ```
 
-Simpan perintah `CHANGE MASTER TO` yang tercetak. PowerShell mengambil perintah itu dari komentar pada hasil ekspor dan menghapus awalan komentar. Perintah tersebut memuat `MASTER_LOG_FILE` dan `MASTER_LOG_POS` yang cocok dengan snapshot ini. Jika perintah tidak tercetak, periksa hasil ekspor sebelum melanjutkan. Hindari perubahan struktur tabel selama ekspor.
+| Perintah PowerShell | Tujuan |
+| --- | --- |
+| `docker compose exec primary mariadb-dump ...` | Jalankan ekspor di container primary. `-u root -p` memakai akun root dan meminta sandinya. `--result-file` menyimpan hasil di `/tmp/rumahsakit.sql` di dalam container. |
+| `docker compose cp primary:/tmp/rumahsakit.sql ./rumahsakit.sql` | Salin dump dari container primary ke folder lab di Windows. |
+| `Select-String ...` | Cari baris komentar `CHANGE MASTER TO` pertama yang berisi `MASTER_LOG_FILE`. `.Line` mengambil teks barisnya dan `-replace` membuang awalan komentar agar SQL bisa dijalankan pada replica. |
+
+| Opsi ekspor | Tujuan |
+| --- | --- |
+| `--single-transaction` | Ambil snapshot data InnoDB yang konsisten pada satu titik waktu. Hindari perubahan struktur tabel selama ekspor. |
+| `--master-data=2` | Catat nama file dan posisi binlog yang cocok dengan snapshot dalam komentar SQL. |
+| `--routines --triggers` | Sertakan definisi prosedur dan trigger dari praktik transaksi. |
+| `--databases rumahsakit` | Pilih database lab dan sertakan perintah untuk membuat serta memilih database saat diimpor. |
+
+Simpan perintah `CHANGE MASTER TO` yang tercetak. Jika tidak ada keluaran, periksa keberhasilan ekspor sebelum melanjutkan. [Dokumentasi opsi mariadb-dump](https://mariadb.com/docs/server/clients-and-utilities/backup-restore-and-import-clients/mariadb-dump)
 
 Kirim salinan ke replica dan masuk sebagai root replica:
 
@@ -420,6 +450,14 @@ SHOW TABLES;
 SELECT kode_obat, stok FROM obat ORDER BY kode_obat;
 ```
 
+| Perintah SQL atau CLI | Tujuan |
+| --- | --- |
+| `SELECT @@server_id, @@read_only` | Pastikan sesi berada di replica (ID `2`) dengan mode baca-saja (`1`) sebelum mengimpor. |
+| `SOURCE /tmp/rumahsakit.sql` | Minta klien MariaDB menjalankan dump yang sudah disalin ke dalam container replica. |
+| `USE rumahsakit` | Pilih database lab agar perintah berikut memakai database yang tepat. |
+| `SHOW TABLES` | Periksa bahwa struktur tabel berhasil dibuat. |
+| `SELECT kode_obat, stok FROM obat ORDER BY kode_obat` | Periksa isi snapshot. Urutan kode obat memudahkan perbandingan dengan primary. |
+
 Pastikan impor bebas galat. Jika praktik transaksi sudah selesai sebelum ekspor, replica menampilkan stok `A002` sebesar **15**. Ini membuktikan snapshot telah disalin.
 
 ### 4.3 Hubungkan dan periksa replica
@@ -434,6 +472,13 @@ CHANGE MASTER TO
   MASTER_PASSWORD='SANDI_REPL_ANDA',
   MASTER_USE_GTID=no;
 ```
+
+| Parameter | Tujuan |
+| --- | --- |
+| `MASTER_HOST='primary'` | Tetapkan nama layanan Docker yang menjadi sumber binlog. |
+| `MASTER_PORT=3306` | Tetapkan port MariaDB pada jaringan internal Compose. |
+| `MASTER_USER` dan `MASTER_PASSWORD` | Gunakan akun dan sandi replikasi yang dibuat pada langkah 4.1. |
+| `MASTER_USE_GTID=no` | Gunakan nama file dan posisi binlog sebagai penanda awal baca. GTID adalah ID transaksi global. |
 
 Jalankan **perintah `CHANGE MASTER TO` kedua** yang tercetak di PowerShell pada bagian 4.2. Perintah ini mengatur file dan posisi dari **dump yang sudah Anda impor ke replica**. Setelah kedua perintah berhasil, mulai replikasi.
 
@@ -463,6 +508,8 @@ SELECT kode_obat, nama_obat, harga, stok
 FROM obat WHERE kode_obat = 'A005';
 ```
 
+`SELECT @@server_id` membuktikan bahwa hasil berasal dari replica. Kueri dengan `WHERE kode_obat = 'A005'` menunjukkan kondisi **sebelum perubahan** dan menjadi kueri pembanding setelah `INSERT`.
+
 Pindah ke **1 - Primary**. Pastikan ID server **1**, lalu tambahkan satu baris.
 
 ```sql
@@ -472,6 +519,8 @@ VALUES ('A005', 'Demam', 150, 100);
 SELECT kode_obat, nama_obat, harga, stok
 FROM obat WHERE kode_obat = 'A005';
 ```
+
+`SELECT @@server_id` memastikan Anda akan menulis di primary. `INSERT` membuat satu perubahan uji setelah snapshot. `SELECT` terakhir memeriksa bahwa baris baru beserta harga dan stoknya sudah tersimpan pada sumber.
 
 Kembali ke **2 - Replica** dan jalankan query pemeriksaan yang sama. Tunggu beberapa detik jika baris belum muncul. Tunjukkan bahwa `A005` kini ada dengan harga **150** dan stok **100**. Jalankan `INSERT` hanya pada primary. Perubahan baru setelah snapshot membuktikan replikasi sedang berjalan. Untuk mengulang uji, gunakan kode baru, misalnya `A006`, pada kedua query pemeriksaan dan satu perintah `INSERT`.
 
