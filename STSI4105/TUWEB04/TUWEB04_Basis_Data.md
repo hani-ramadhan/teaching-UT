@@ -33,6 +33,8 @@ Gunakan kasus yang sama dengan lab. Seorang pasien membeli **5 unit A002**. Stok
 
 Untuk **10 menit**, gunakan pembagian **3 + 3 + 2 + 2 menit** dan alihkan sisa waktu ke praktik. Untuk **20 menit**, minta mahasiswa berpasangan selama 5 menit untuk membandingkan dua skenario di akhir pengantar. Jalankan dan periksa layanan sebelum kelas. Gunakan menit 20–22 untuk membuka phpMyAdmin dan cek tabel InnoDB.
 
+Untuk pengantar singkat, tampilkan diagram hasil transaksi, alur replikasi, peran DBMS, dan pencarian obat. Gunakan diagram deadlock, partisi, dan pengembangan aplikasi untuk diskusi lanjutan.
+
 ### AB 9 — Apa yang terjadi jika penjualan gagal?
 
 Transaksi mengelompokkan operasi baca dan tulis. Di lab, `INSERT` ke `transaksi_obat` memicu perubahan `obat.stok`. Gunakan empat sifat **ACID** untuk membaca hasilnya.
@@ -46,7 +48,27 @@ Transaksi mengelompokkan operasi baca dan tulis. Di lab, `INSERT` ke `transaksi_
 
 `START TRANSACTION` membuka transaksi. Setelah operasi terakhir selesai, transaksi masih perlu `COMMIT` untuk menyimpan hasil. Jika operasi gagal, aplikasi dapat menjalankan `ROLLBACK` untuk membatalkan transaksi. `SAVEPOINT` memberi titik untuk membatalkan sebagian langkah.
 
-Satu sesi dapat menunggu jika sesi lain memegang kunci pada baris obat yang ingin diubah. **Deadlock** terjadi jika terbentuk siklus tunggu. Contohnya, sesi A memegang kunci A001 dan menunggu A002, sementara sesi B memegang kunci A002 dan menunggu A001.
+**Hasil transaksi.** Ikuti kedua jalur dari perubahan yang sama. Baris penjualan dan stok berubah bersama.
+
+```mermaid
+flowchart TD
+    jual["Jual 5 unit dari stok A002 = 20"] --> pemicu["Trigger menurunkan stok ke 15"]
+    pemicu --> akhir{"Simpan transaksi?"}
+    akhir -->|COMMIT| simpan["Penjualan tersimpan, stok A002 = 15"]
+    akhir -->|ROLLBACK| batal["Penjualan batal, stok A002 = 20"]
+```
+
+Satu sesi dapat menunggu jika sesi lain memegang kunci pada baris obat yang ingin diubah. **Deadlock** terjadi jika terbentuk siklus tunggu.
+
+**Siklus deadlock.** Ikuti panah dari sesi A sampai kembali ke sesi A.
+
+```mermaid
+flowchart LR
+    sesiA["Sesi A"] -->|Menunggu| kunci2["Kunci A002"]
+    kunci2 -->|Dipegang oleh| sesiB["Sesi B"]
+    sesiB -->|Menunggu| kunci1["Kunci A001"]
+    kunci1 -->|Dipegang oleh| sesiA
+```
 
 **Cek cepat.** Jika stok sempat menjadi 15 di dalam transaksi lalu transaksi dibatalkan, berapa stok setelahnya? **Jawaban.** kembali ke 20.
 
@@ -62,7 +84,40 @@ Organisasi dapat membagi atau menyalin data ke beberapa lokasi yang terhubung le
 | Partisi vertikal | Kolom administrasi dan kolom klinis disimpan terpisah dengan ID pasien sebagai penghubung. |
 | Kombinasi | Kunjungan dipisah per klinik dan katalog obat disalin ke semua klinik. |
 
+**Cara membaca partisi.** Pada partisi horizontal, kolomnya sama dan barisnya berbeda. Pada partisi vertikal, kedua bagian menyertakan ID pasien agar kolomnya dapat digabung kembali.
+
+```mermaid
+flowchart TD
+    data["Data layanan pasien"] -->|Pisah baris| lokasi["Partisi horizontal"]
+    data -->|Pisah kolom| jenis["Partisi vertikal"]
+    lokasi --> klinikA["Kunjungan Klinik A"]
+    lokasi --> klinikB["Kunjungan Klinik B"]
+    jenis --> admin["ID pasien dan kolom administrasi"]
+    jenis --> klinis["ID pasien dan kolom klinis"]
+```
+
 Lab memakai **replikasi satu arah**. Impor snapshot menyalin kondisi awal. Setelah itu, replica mengikuti perubahan dari primary melalui binary log. Replica dapat tertinggal sejenak. Kedua server berada dalam container terpisah pada satu komputer.
+
+**Alur replikasi.** Garis dari atas ke bawah menunjukkan urutan kejadian. Amati kapan pembaca di replica melihat stok baru.
+
+```mermaid
+sequenceDiagram
+    participant M as Mahasiswa
+    participant P as Primary
+    participant R as Replica
+    M->>P: Ekspor snapshot awal
+    M->>R: Impor snapshot dengan stok 20
+    M->>P: Jual 5 unit dan COMMIT
+    Note over P: Stok 15 tercatat di binlog
+    opt Jika replica belum menerapkan perubahan
+        M->>R: Baca stok
+        R-->>M: Stok 20
+    end
+    P->>R: Kirim perubahan dari binlog
+    Note over R: Replica menerapkan perubahan
+    M->>R: Baca stok lagi
+    R-->>M: Stok 15
+```
 
 **Cek cepat.** Jika A005 sudah ada setelah impor snapshot, bagaimana cara membuktikan replikasi aktif? **Jawaban.** buat perubahan baru di primary, lalu periksa apakah perubahan muncul di replica.
 
@@ -70,13 +125,46 @@ Lab memakai **replikasi satu arah**. Impor snapshot menyalin kondisi awal. Setel
 
 **MariaDB** adalah DBMS. Ia menyimpan data, memeriksa hak akses dan batasan tabel, serta mengelola transaksi. **phpMyAdmin** adalah antarmuka administrasi untuk mengirim SQL dan melihat hasil. **Aplikasi rumah sakit** dapat memakai DBMS yang sama untuk formulir penjualan dan laporan stok. MySQL, PostgreSQL, SQL Server, dan Oracle Database adalah contoh DBMS lain dalam materi.
 
+**Peran DBMS.** Antarmuka dapat berbeda. MariaDB menjalankan permintaan dan menegakkan aturan yang sama.
+
+```mermaid
+flowchart TD
+    pma["phpMyAdmin"] -->|Kirim SQL| dbms["MariaDB mengelola akses dan transaksi"]
+    app["Aplikasi rumah sakit"] -->|Kirim SQL| dbms
+    dbms -->|Baca dan tulis| data["Tabel obat dan transaksi_obat"]
+    dbms -->|Periksa| aturan["Aturan stok dan referensi ID obat"]
+```
+
 **Cek cepat.** Saat pengguna mencoba menyimpan stok negatif, komponen mana yang menegakkan aturan `CHECK (stok >= 0)`? **Jawaban.** MariaDB.
 
 ### AB 14 — Bagaimana aplikasi menemukan satu obat?
 
 Saat petugas mencari `A002`, aplikasi mengirim query. DBMS memeriksa struktur tabel dan memilih cara mencari baris. Indeks pada `kode_obat` dapat membantu pencarian. DBMS mengembalikan hasil ke aplikasi. Di lab, volume Docker menjadi tempat penyimpanan data MariaDB.
 
+**Jalur pencarian.** Kedua jalur menghasilkan baris yang sama. DBMS memilih jalur akses.
+
+```mermaid
+flowchart TD
+    cari["Cari obat A002"] --> rencana{"Pakai indeks?"}
+    rencana -->|Ya| indeks["Cari A002 pada indeks kode_obat"]
+    rencana -->|Tidak| pindai["Pindai tabel obat"]
+    indeks --> hasil["Kembalikan baris A002"]
+    pindai --> hasil
+```
+
 Hubungkan alur tersebut ke lima tahap pengembangan. Rencanakan fitur penjualan. Analisis aturan stok. Rancang tabel dan batasannya. Terapkan SQL. Evaluasi hasilnya dengan uji penjualan 5 unit dan uji penjualan yang melebihi stok.
+
+**Umpan balik dari pengujian.** Jika sistem menerima penjualan yang melebihi stok, perbaiki batasan tabel dan uji kembali.
+
+```mermaid
+flowchart TD
+    rencana["Rencanakan fitur"] --> analisis["Analisis aturan stok"]
+    analisis --> desain["Rancang tabel dan batasan"]
+    desain --> sql["Terapkan SQL"]
+    sql --> evaluasi{"Uji stok lulus?"}
+    evaluasi -->|Ya| siap["Fitur siap digunakan"]
+    evaluasi -->|Belum| desain
+```
 
 **Diskusi tambahan untuk versi 20 menit.** Bandingkan dua skenario. Pada skenario A, penjualan 5 unit dibatalkan. Pada skenario B, penjualan disimpan, tetapi replica masih menunjukkan stok 20. Jelaskan penyebabnya. **Jawaban.** A membatalkan perubahan dan stok primary kembali ke 20. Pada B, primary sudah menyimpan stok 15 dan replica belum menerapkan perubahan.
 
