@@ -215,7 +215,30 @@ WHERE table_schema = 'rumahsakit'
 ORDER BY table_name;
 ```
 
-Pada startup pertama, primary memiliki tiga tabel InnoDB. Tabel `pasien` dan `obat` memiliki data awal. Tabel `transaksi_obat` masih kosong. Replica memiliki basis data `rumahsakit` yang kosong sampai Anda mengimpor salinan awal.
+### 2.1 Siapkan tabel dan data awal
+
+Gunakan hasil kueri di atas untuk memilih langkah berikut.
+
+| Hasil | Tindakan |
+| --- | --- |
+| `server_id=2`, `read_only=1` | Anda berada di **2 - Replica**. Tabel di sini masih kosong sebelum impor snapshot pada bagian 4. Pindah ke **1 - Primary**. |
+| `server_id=1`, `read_only=0`, tiga tabel InnoDB tampil | Langsung periksa data awal. |
+| `server_id=1`, `read_only=0`, tabel kosong atau belum lengkap | Impor skrip prasyarat secara manual pada **1 - Primary**. |
+
+Untuk impor manual, simpan [`00-rumahsakit.sql`](sql/00-rumahsakit.sql). Pada phpMyAdmin, pilih **1 - Primary**, lalu buka tab **Import**, pilih berkas SQL, dan klik **Import**. Anda juga dapat menyalin isi berkas ke tab **SQL** lalu menjalankannya. Skrip membuat basis data `rumahsakit` dan tiga tabel yang diperlukan. Skrip dapat diimpor kembali untuk melengkapi data contoh. Baris yang sudah ada tetap dipertahankan.
+
+Setelah impor, jalankan kembali pemeriksaan tabel. Ketiga tabel harus memakai InnoDB. Periksa juga data awal sebelum melanjutkan.
+
+```sql
+SELECT 'pasien' AS tabel, COUNT(*) AS jumlah FROM rumahsakit.pasien
+UNION ALL SELECT 'obat', COUNT(*) FROM rumahsakit.obat
+UNION ALL SELECT 'transaksi_obat', COUNT(*) FROM rumahsakit.transaksi_obat;
+
+SELECT id_obat, kode_obat, harga, stok
+FROM rumahsakit.obat WHERE kode_obat = 'A002';
+```
+
+Pada lab baru, hasilnya **3 pasien, 3 obat, dan 0 transaksi obat**. Obat `A002` memiliki **ID 2, harga 15.000, dan stok 20**. Impor ulang jika baris contoh belum terisi. Jika `A002` memakai ID selain 2, periksa data sebelum menjalankan demo trigger yang memakai ID 2. Jika stok berubah karena demo sebelumnya, gunakan blok pemulihan data contoh pada [bagian 7](#7-jika-ada-masalah) sebelum mengulang demo. Prosedur transaksi dan trigger dibuat pada bagian 3.
 
 ## 3. Praktik transaksi pada primary
 
