@@ -475,6 +475,35 @@ FROM obat WHERE kode_obat = 'A005';
 
 Kembali ke **2 - Replica** dan jalankan query pemeriksaan yang sama. Tunggu beberapa detik jika baris belum muncul. Tunjukkan bahwa `A005` kini ada dengan harga **150** dan stok **100**. Jalankan `INSERT` hanya pada primary. Perubahan baru setelah snapshot membuktikan replikasi sedang berjalan. Untuk mengulang uji, gunakan kode baru, misalnya `A006`, pada kedua query pemeriksaan dan satu perintah `INSERT`.
 
+### 4.5 Hubungkan hasil lab dengan replikasi di cloud
+
+#### Mengapa aplikasi memakai replica?
+
+Pada bagian 4.4, Anda mencatat obat baru di primary dan membacanya dari replica. Di sistem rumah sakit, pola yang sama memungkinkan primary menangani penjualan, sementara replica melayani laporan stok atau analisis. Satu primary dapat memasok perubahan ke beberapa replica untuk membagi beban baca. Replica juga dapat menjadi sumber pembuatan backup. Untuk memulihkan data setelah penghapusan yang keliru, gunakan backup dari sebelum kejadian karena penghapusan di primary juga dapat diterapkan di replica. [Artikel MariaDB Foundation tentang replikasi di cloud](https://mariadb.org/database-master-slave-replication-in-the-cloud/)
+
+#### Kapan hasil penulisan terlihat di replica?
+
+Pada replikasi **asinkron** seperti di lab ini, primary dapat menyelesaikan `COMMIT` sebelum replica menerima dan menerapkan perubahan. Karena itu, laporan dari replica dapat tertinggal. Pada rancangan **sinkron**, kapan transaksi dinyatakan berhasil bergantung pada konfirmasi dari node lain sesuai protokolnya. Dalam kasus rumah sakit, baca stok dari primary jika keputusan penjualan harus langsung memakai hasil penulisan terbaru. [Penjelasan replikasi di cloud](https://mariadb.org/database-master-slave-replication-in-the-cloud/) · [Dokumentasi replikasi MariaDB](https://mariadb.com/docs/server/ha-and-performance/standard-replication/semisynchronous-replication)
+
+#### Apa yang dibutuhkan untuk ketersediaan tinggi?
+
+Jika container primary berhenti di lab, replica yang masih berjalan dapat menyajikan data terakhir yang sudah diterapkan. Penulisan tetap bergantung pada primary sampai layanan dialihkan. Jika komputer lab mati, kedua container ikut berhenti. Pada arsitektur ketersediaan tinggi (*high availability* atau HA), tempatkan server pada host terpisah dan siapkan pemantauan serta **failover**, yaitu pengalihan layanan saat primary gagal. [Rancangan HA dari Severalnines](https://severalnines.com/blog/deploying-mariadb-replication-high-availability/)
+
+Pada contoh Severalnines, proxy seperti MaxScale mengarahkan kueri dan memantau server. Jika failover dikonfigurasi, sistem dapat memilih replica yang layak, menjadikannya primary baru, lalu mengarahkan penulisan ke server itu. Contoh tersebut juga memakai lebih dari satu proxy dan Keepalived untuk menjaga alamat layanan tetap tersedia jika salah satu proxy gagal. [Contoh proxy dan failover dari Severalnines](https://severalnines.com/blog/deploying-mariadb-replication-high-availability/)
+
+Diagram ini menggambarkan rute kueri saat server sehat pada rancangan tersebut. Di lab, Anda memilih server secara langsung melalui phpMyAdmin.
+
+```mermaid
+flowchart TD
+    app["Aplikasi rumah sakit"] --> alamat["Alamat layanan basis data"]
+    alamat --> proxy["Proxy dan monitor"]
+    proxy -->|Penulisan| primary["Primary"]
+    proxy -->|Bacaan yang boleh tertinggal| replica["Replica"]
+    primary -->|Perubahan dari binlog| replica
+```
+
+**Cek pemahaman setelah bagian 4.4.** Jika primary berhenti sesaat setelah `COMMIT`, lalu `A005` belum terlihat di replica, apa yang perlu diperiksa? Periksa apakah replica sudah menerima event dan apakah thread SQL sudah menerapkannya. Jika event belum diterima, pengalihan ke replica dapat membuat perubahan terakhir belum tersedia pada primary baru. Langkah 4.4 membuktikan pengiriman dan penerapan perubahan. Uji failover perlu memeriksa pengalihan penulisan saat primary gagal. [Dokumentasi thread replikasi](https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-threads) · [Rancangan failover dari Severalnines](https://severalnines.com/blog/deploying-mariadb-replication-high-availability/)
+
 ## 5. Pembahasan AB 13–15
 
 | AB | Pokok bahasan | Kegiatan mahasiswa |
