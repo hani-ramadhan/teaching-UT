@@ -363,7 +363,7 @@ Jika akun `repl` sudah ada, gunakan sandi yang Anda tetapkan saat membuatnya. Pr
 
 ### 4.2 Ekspor data awal dan impor ke replica
 
-Dari PowerShell, buat snapshot pada primary. Masukkan sandi root saat diminta. Lanjutkan setelah ekspor berhasil.
+Dari PowerShell, buat snapshot pada primary setelah selesai menyiapkan akun lab dan akun replikasi. Masukkan sandi root saat diminta. Lanjutkan setelah ekspor berhasil.
 
 ```powershell
 docker compose exec primary mariadb-dump -u root -p --single-transaction --master-data=2 --routines --triggers --databases rumahsakit --result-file=/tmp/rumahsakit.sql
@@ -477,6 +477,7 @@ Empat elemen di atas mengikuti instruksi Tugas 3. Kolom bukti adalah panduan rek
 | `Duplicate entry` pada praktik transaksi atau trigger | ID contoh sudah pernah dipakai. Gunakan data awal, atau bersihkan baris contoh dengan blok di bawah. Untuk uji replikasi, pakai kode obat baru. |
 | `Last_IO_Errno=1236` dan pesan `impossible position` saat pertama kali menghubungkan replica | Jika snapshot yang benar sudah diimpor dan replica belum menerapkan perubahan, jalankan `STOP REPLICA;` di replica. Jalankan perintah koordinat dari dump yang sama seperti pada bagian 4.2, lalu `START REPLICA;`. Jika dump yang diimpor tidak diketahui atau file binlog sudah tidak tersedia, siapkan snapshot baru dan gunakan koordinat dari snapshot itu. |
 | `Slave_IO_Running` bernilai `Connecting` atau `No` | Baca `Last_IO_Error`. Periksa nama host `primary`, port internal `3306`, akun `repl`, dan sandi replikasi. |
+| `Last_SQL_Errno=1396` pada `CREATE USER 'mahasiswa'@'%'` | Periksa apakah akun itu sudah ada di replica. Jika ada, ikuti [langkah pemulihan galat 1396](#pulihkan-replica-setelah-galat-1396). |
 | `Slave_SQL_Running` bernilai `No` | Baca `Last_SQL_Error`. Periksa apakah snapshot berhasil diimpor dan apakah file serta posisi diambil dari dump yang sama. |
 | Masuk ke server yang keliru | Jalankan `SELECT @@server_id, @@read_only;`. Hasil primary `1, 0`. Hasil replica `2, 1`. |
 
@@ -492,6 +493,27 @@ COMMIT;
 ```
 
 Setelah selesai, keluar dari terminal MariaDB dengan `exit`. Dari PowerShell, jalankan `docker compose stop`. Untuk melanjutkan, jalankan `docker compose up -d --wait`. Volume menyimpan data dan konfigurasi replikasi. Skrip inisialisasi berjalan saat volume primary dibuat pertama kali.
+
+### Pulihkan replica setelah galat 1396
+
+Kedua container membuat akun `mahasiswa` saat inisialisasi. Galat 1396 muncul jika replica mencoba menjalankan `CREATE USER` untuk akun yang sudah ada. Ini dapat terjadi jika posisi awal replikasi berada sebelum event pembuatan akun atau akun dibuat di primary setelah snapshot diambil.
+
+Dari PowerShell, buka `docker compose exec replica mariadb -u root -p`. Periksa ID server dan akun sebelum melanjutkan.
+
+```sql
+SELECT @@server_id AS server_id;
+SELECT User, Host FROM mysql.user WHERE User = 'mahasiswa' AND Host = '%';
+```
+
+Jika ID server **2** dan akun itu ditemukan, reset konfigurasi replikasi dan hapus salinan database lab pada **replica**. Langkah ini menghapus data `rumahsakit` di replica. Hasil praktik di primary menjadi sumber snapshot baru.
+
+```sql
+STOP REPLICA;
+RESET REPLICA ALL;
+DROP DATABASE IF EXISTS rumahsakit;
+```
+
+Buat dan impor **snapshot baru** sesuai [bagian 4.2](#42-ekspor-data-awal-dan-impor-ke-replica). Dump membuat ulang database pada replica. Hubungkan kembali replica sesuai [bagian 4.3](#43-hubungkan-dan-periksa-replica), termasuk sandi akun `repl` dan perintah koordinat dari dump baru. Setelah kedua thread berstatus `Yes`, uji replikasi dengan kode obat yang belum ada.
 
 ## 8. Rujukan
 
