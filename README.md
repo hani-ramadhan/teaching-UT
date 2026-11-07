@@ -6,3 +6,5 @@ Repository untuk mengajar/tutor di Universitas Terbuka Indonesia
 - [TUWEB 02: AB 1-7, tutorial 90 menit](STSI4105/TUWEB02/README.md) — pembahasan, latihan ERD yEd Live, normalisasi, dan lab MariaDB melalui Docker.
 
 - [TUWEB 03: AB 8-11, tutorial 90 menit](STSI4105/TUWEB03/README.md) — praktik SQL, transaksi, konkurensi, basis data terdistribusi, dan pengantar VirtualBox.
+
+- [TUWEB 04: AB 12-15, tutorial 90 menit](STSI4105/TUWEB04/README.md) — transaksi, trigger, replikasi MariaDB dengan Docker, dan panduan video Tugas 3.

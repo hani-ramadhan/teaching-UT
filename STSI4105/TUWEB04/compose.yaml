@@ -1,0 +1,52 @@
+name: tuweb04
+
+services:
+  primary:
+    image: mariadb:11.4
+    command:
+      - --server-id=1
+      - --log-bin=mariadb-bin
+      - --binlog-format=ROW
+      - --log-bin-trust-function-creators=1
+    environment: &database_environment
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Isi MARIADB_ROOT_PASSWORD pada .env}
+      MARIADB_ROOT_HOST: localhost
+      MARIADB_DATABASE: rumahsakit
+      MARIADB_USER: mahasiswa
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Isi MARIADB_PASSWORD pada .env}
+    volumes:
+      - primary_data:/var/lib/mysql
+      - ./sql/00-rumahsakit.sql:/docker-entrypoint-initdb.d/00-rumahsakit.sql:ro
+      - ./sql/01-routines.sql:/lab/01-routines.sql:ro
+    healthcheck: &database_healthcheck
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  replica:
+    image: mariadb:11.4
+    command: ["--server-id=2", "--read-only=ON"]
+    environment: *database_environment
+    volumes:
+      - replica_data:/var/lib/mysql
+    healthcheck: *database_healthcheck
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    environment:
+      PMA_HOSTS: primary,replica
+      PMA_PORTS: "3306,3306"
+      PMA_VERBOSES: "1 - Primary,2 - Replica"
+    ports:
+      - "127.0.0.1:${PMA_PORT:-8082}:80"
+    depends_on:
+      primary:
+        condition: service_healthy
+      replica:
+        condition: service_healthy
+
+volumes:
+  primary_data:
+  replica_data:
