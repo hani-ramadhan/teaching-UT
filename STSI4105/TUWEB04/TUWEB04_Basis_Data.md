@@ -10,14 +10,77 @@ Panduan UT memakai Windows, Ubuntu di VirtualBox, dan XAMPP. Di lab Docker ini, 
 
 | Menit | Aktivitas mahasiswa |
 | --- | --- |
-| 0–10 | Periksa tiga layanan, pilih server di phpMyAdmin, lalu cek tabel InnoDB. |
-| 10–30 | Jalankan `transaksi1` sampai `transaksi5`. Bandingkan hasil sebelum dan sesudah transaksi. |
-| 30–40 | Buat trigger penjualan obat dan buktikan stok berkurang dari 20 menjadi 15. |
-| 40–65 | Ekspor data primary, impor ke replica, hubungkan replikasi, lalu uji satu perubahan baru. |
-| 65–82 | Bahas DBMS, organisasi berkas, dan rancangan aplikasi perpustakaan. |
-| 82–90 | Periksa bukti Tugas 3, susun urutan video, dan selesaikan tanya jawab. |
+| 0–15 | Ikuti [pengantar sebelum praktikum](#pengantar-sebelum-praktikum). Prediksi hasil transaksi dan replikasi. |
+| 15–22 | Periksa tiga layanan, pilih server di phpMyAdmin, lalu cek tabel InnoDB. |
+| 22–42 | Jalankan `transaksi1` sampai `transaksi5`. Bandingkan hasil sebelum dan sesudah transaksi. |
+| 42–52 | Buat trigger penjualan obat dan buktikan stok berkurang dari 20 menjadi 15. |
+| 52–77 | Ekspor data primary, impor ke replica, hubungkan replikasi, lalu uji satu perubahan baru. |
+| 77–84 | Terapkan konsep DBMS dan akses data pada rancangan aplikasi perpustakaan. |
+| 84–90 | Periksa bukti Tugas 3, susun urutan video, dan selesaikan tanya jawab. |
 
 Pasang Rancher Desktop dan unduh image sebelum kelas. Jika waktu praktik habis, selesaikan pengujian dan rekam video secara mandiri.
+
+## Pengantar sebelum praktikum
+
+Gunakan kasus yang sama dengan lab. Seorang pasien membeli **5 unit A002**. Stok awal adalah **20**. Klinik lain membaca salinan data rumah sakit. Minta mahasiswa memprediksi apa yang terjadi pada transaksi penjualan, stok, dan salinan sebelum membuka terminal.
+
+| Menit | Materi | Kegiatan |
+| --- | --- | --- |
+| 0–4 | AB 9 — Transaksi dan ACID | Prediksi stok jika penjualan disimpan atau dibatalkan. |
+| 4–8 | AB 10 — Basis data terdistribusi | Pilih antara menyalin data dan membaginya antarlokasi. |
+| 8–11 | AB 13 — DBMS dan aplikasi | Tentukan peran MariaDB, phpMyAdmin, dan aplikasi rumah sakit. |
+| 11–15 | AB 14 — Penyimpanan, akses, dan pengembangan | Ikuti alur pencarian kode obat dan hubungkan satu aturan bisnis ke rancangan basis data. |
+
+Untuk **10 menit**, gunakan pembagian **3 + 3 + 2 + 2 menit** dan alihkan sisa waktu ke praktik. Untuk **20 menit**, minta mahasiswa berpasangan selama 5 menit untuk membandingkan dua skenario di akhir pengantar. Jalankan dan periksa layanan sebelum kelas. Gunakan menit 20–22 untuk membuka phpMyAdmin dan cek tabel InnoDB.
+
+### AB 9 — Apa yang terjadi jika penjualan gagal?
+
+Transaksi mengelompokkan operasi baca dan tulis. Di lab, `INSERT` ke `transaksi_obat` memicu perubahan `obat.stok`. Gunakan empat sifat **ACID** untuk membaca hasilnya.
+
+| Sifat | Makna pada contoh penjualan |
+| --- | --- |
+| **Atomicity** — atomisitas | Jika transaksi dibatalkan, baris penjualan dan perubahan stok sama-sama dibatalkan. |
+| **Consistency** — konsistensi | Transaksi harus memenuhi aturan data, misalnya stok minimal nol dan ID obat merujuk ke obat yang ada. |
+| **Isolation** — isolasi | Pada pengaturan lab, sesi lain belum melihat baris penjualan yang belum disimpan. |
+| **Durability** — ketahanan | Perubahan yang sudah di-`COMMIT` bertahan setelah MariaDB dimulai ulang. |
+
+`START TRANSACTION` membuka transaksi. Setelah operasi terakhir selesai, transaksi masih perlu `COMMIT` untuk menyimpan hasil. Jika operasi gagal, aplikasi dapat menjalankan `ROLLBACK` untuk membatalkan transaksi. `SAVEPOINT` memberi titik untuk membatalkan sebagian langkah.
+
+Satu sesi dapat menunggu jika sesi lain memegang kunci pada baris obat yang ingin diubah. **Deadlock** terjadi jika terbentuk siklus tunggu. Contohnya, sesi A memegang kunci A001 dan menunggu A002, sementara sesi B memegang kunci A002 dan menunggu A001.
+
+**Cek cepat.** Jika stok sempat menjadi 15 di dalam transaksi lalu transaksi dibatalkan, berapa stok setelahnya? **Jawaban.** kembali ke 20.
+
+### AB 10 — Apa yang disalin ke klinik lain?
+
+Organisasi dapat membagi atau menyalin data ke beberapa lokasi yang terhubung lewat jaringan. Pilihan bergantung pada kebutuhan berbagi data, biaya komunikasi, dan toleransi terhadap keterlambatan.
+
+| Strategi | Contoh pada kasus rumah sakit |
+| --- | --- |
+| Terpusat | Semua klinik mengakses satu server rumah sakit. |
+| Replikasi | Klinik membaca salinan katalog obat dari server lain. |
+| Partisi horizontal | Setiap klinik menyimpan baris kunjungan untuk lokasinya. |
+| Partisi vertikal | Kolom administrasi dan kolom klinis disimpan terpisah dengan ID pasien sebagai penghubung. |
+| Kombinasi | Kunjungan dipisah per klinik dan katalog obat disalin ke semua klinik. |
+
+Lab memakai **replikasi satu arah**. Impor snapshot menyalin kondisi awal. Setelah itu, replica mengikuti perubahan dari primary melalui binary log. Replica dapat tertinggal sejenak. Kedua server berada dalam container terpisah pada satu komputer.
+
+**Cek cepat.** Jika A005 sudah ada setelah impor snapshot, bagaimana cara membuktikan replikasi aktif? **Jawaban.** buat perubahan baru di primary, lalu periksa apakah perubahan muncul di replica.
+
+### AB 13 — Siapa yang mengelola data?
+
+**MariaDB** adalah DBMS. Ia menyimpan data, memeriksa hak akses dan batasan tabel, serta mengelola transaksi. **phpMyAdmin** adalah antarmuka administrasi untuk mengirim SQL dan melihat hasil. **Aplikasi rumah sakit** dapat memakai DBMS yang sama untuk formulir penjualan dan laporan stok. MySQL, PostgreSQL, SQL Server, dan Oracle Database adalah contoh DBMS lain dalam materi.
+
+**Cek cepat.** Saat pengguna mencoba menyimpan stok negatif, komponen mana yang menegakkan aturan `CHECK (stok >= 0)`? **Jawaban.** MariaDB.
+
+### AB 14 — Bagaimana aplikasi menemukan satu obat?
+
+Saat petugas mencari `A002`, aplikasi mengirim query. DBMS memeriksa struktur tabel dan memilih cara mencari baris. Indeks pada `kode_obat` dapat membantu pencarian. DBMS mengembalikan hasil ke aplikasi. Di lab, volume Docker menjadi tempat penyimpanan data MariaDB.
+
+Hubungkan alur tersebut ke lima tahap pengembangan. Rencanakan fitur penjualan. Analisis aturan stok. Rancang tabel dan batasannya. Terapkan SQL. Evaluasi hasilnya dengan uji penjualan 5 unit dan uji penjualan yang melebihi stok.
+
+**Diskusi tambahan untuk versi 20 menit.** Bandingkan dua skenario. Pada skenario A, penjualan 5 unit dibatalkan. Pada skenario B, penjualan disimpan, tetapi replica masih menunjukkan stok 20. Jelaskan penyebabnya. **Jawaban.** A membatalkan perubahan dan stok primary kembali ke 20. Pada B, primary sudah menyimpan stok 15 dan replica belum menerapkan perubahan.
+
+Lanjutkan ke [persiapan lab](#2-siapkan-lab-di-windows-dan-rancher-desktop). Gunakan prediksi tadi untuk memeriksa hasil praktik.
 
 ## 2. Siapkan lab di Windows dan Rancher Desktop
 
@@ -320,6 +383,7 @@ Setelah selesai, keluar dari terminal MariaDB dengan `exit`. Dari PowerShell, ja
 
 - RAT STSI4105, AB 12–15. AB 12 mencakup kedua praktik. AB 13–15 mencakup aplikasi basis data, organisasi berkas, dan pengembangan aplikasi.
 - *Panduan Praktikum Transaksi dan Basis Data Terdistribusi*, STSI4105 Edisi 2, halaman PDF 8–27 untuk transaksi dan trigger, 27–51 untuk replikasi, dan 53 untuk pelaporan. *MSIM4206 Tugas 3 – 20252*, halaman 1, memuat instruksi pengumpulan video.
-- Materi inisiasi AB 13, AB 14, dan AB 15. Kasus perpustakaan dan diagram ER berada pada awal materi AB 15.
+- Materi inisiasi AB 9, halaman PDF 2–8 untuk transaksi dan konkurensi. AB 10, halaman PDF 2–4 untuk strategi distribusi. AB 13, halaman PDF 2–8 untuk peran dan contoh DBMS. AB 14, halaman PDF 2–8 untuk akses data, organisasi berkas, dan tahap pengembangan.
+- Materi inisiasi AB 15. Kasus perpustakaan dan diagram ER berada pada awal materi.
 - [Jaringan Docker Compose](https://docs.docker.com/compose/how-tos/networking/) · [Konfigurasi Docker phpMyAdmin](https://docs.phpmyadmin.net/en/latest/setup.html#docker-environment-variables)
 - [Opsi mariadb-dump](https://mariadb.com/docs/server/clients-and-utilities/backup-restore-and-import-clients/mariadb-dump) · [CHANGE MASTER TO](https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/replication-statements/change-master-to) · [SHOW REPLICA STATUS](https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-replica-status)
